@@ -8,12 +8,12 @@
     "node": ">=22"
   },
   "scripts": {
-    "target-app": "tsx target-app/server.ts",
-    "operator": "tsx src/escalation/console.ts",
-    "discover": "tsx src/cli.ts discover",
-    "replay": "tsx src/cli.ts replay",
-    "catalog": "tsx src/cli.ts catalog",
-    "test": "tsx --test tests/*.test.ts",
+    "target-app": "tsx --env-file-if-exists=.env target-app/server.ts",
+    "operator": "tsx --env-file-if-exists=.env src/escalation/console.ts",
+    "discover": "tsx --env-file-if-exists=.env src/cli.ts discover",
+    "replay": "tsx --env-file-if-exists=.env src/cli.ts replay",
+    "catalog": "tsx --env-file-if-exists=.env src/cli.ts catalog",
+    "test": "tsx --env-file-if-exists=.env --test tests/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

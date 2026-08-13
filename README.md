@@ -21,16 +21,24 @@ Real output from every scenario is in [evidence/](evidence/README.md).
 ```bash
 npm install
 npx playwright install chromium
+cp .env.example .env
 ```
 
 Node 22+. No other services required — the target application runs locally.
+
+Every npm script loads `.env` automatically (via Node's native `--env-file-if-exists`,
+so the project still runs fine without one). `.env` is gitignored; `.env.example`
+documents every setting and its default.
 
 **Only discovery needs an API key.** Replay, escalation, the operator console, the
 capability catalog and the tests all run without one, against the committed artifacts.
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...   # required for `npm run discover` only
+# .env
+ANTHROPIC_API_KEY=sk-ant-...          # required for `npm run discover` only
 ```
+
+An exported shell variable works too and takes precedence.
 
 ## Demo path
 
@@ -159,14 +167,18 @@ npm run typecheck
 
 ## Configuration
 
+Set these in `.env` (see `.env.example`). All have working defaults except the key.
+
 | Variable | Default | Purpose |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | — | Discovery only |
 | `TARGET_APP_PORT` | `3100` | Target application |
 | `OPERATOR_PORT` | `3200` | Operator console |
+| `OPERATOR_NAME` | `local-operator` | Recorded against interventions you resolve |
 | `POLICY_PATH` | `policy.yaml` | Guardrail config |
 | `ARTIFACTS_DIR` | `artifacts` | Capability store |
 | `RUNS_DIR` | `runs` | Run logs and evidence |
+| `INTERVENTIONS_DIR` | `runs/interventions` | Queue shared with the operator console |
 
 ## A note on the committed artifacts
 
