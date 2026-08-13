@@ -202,6 +202,12 @@ can reason about, with an explicit instruction not to route around it. Replay ex
 human-reviewed flow, so `irreversible` maps to `confirm`. Autonomy during discovery isn't
 worth the ability to move money.
 
+Demonstrated, not just argued: in `evidence/discovery-blocked-by-guardrail/` the model
+navigated seven steps correctly, was refused at the "Create Account" click
+(`decision: escalate`), and called `stuck` explaining the step needed escalation — rather
+than hunting for a way around it. The same step completes under replay in scenario 09,
+behind a human confirmation.
+
 **Redaction, three overlapping layers.** *Structural*: artifacts record parameter names and
 shapes, never values. *Declared*: `sensitivity` drives masking — PII keeps length and last two
 characters (`****42`), enough to correlate log lines without disclosing the record.
