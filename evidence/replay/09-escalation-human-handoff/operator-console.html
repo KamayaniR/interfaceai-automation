@@ -1,0 +1,64 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>Operator Console</title><meta http-equiv="refresh" content="5">
+<style>
+  body { font: 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0;
+         background: #0f1419; color: #e6e6e6; }
+  header { background: #1a2332; padding: 14px 22px; border-bottom: 1px solid #2a3441; }
+  header h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: .3px; }
+  header span { color: #7d8b9a; font-weight: 400; }
+  .wrap { padding: 22px; max-width: 900px; }
+  .card { background: #161d26; border: 1px solid #2a3441; border-radius: 6px;
+          padding: 18px; margin-bottom: 16px; }
+  .card h2 { margin: 0 0 4px; font-size: 15px; }
+  .muted { color: #7d8b9a; font-size: 12px; }
+  .reason { background: #2d1f1f; border-left: 3px solid #d05656; padding: 10px 14px;
+            margin: 14px 0; border-radius: 3px; }
+  table.kv { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  table.kv td { padding: 5px 0; vertical-align: top; }
+  table.kv td:first-child { color: #7d8b9a; width: 150px; }
+  code { background: #0f1419; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+  img.shot { max-width: 100%; border: 1px solid #2a3441; border-radius: 4px; margin-top: 10px; }
+  form.actions { margin-top: 16px; display: flex; gap: 10px; align-items: center; }
+  input[type=text] { background: #0f1419; border: 1px solid #2a3441; color: #e6e6e6;
+                     padding: 8px 10px; border-radius: 4px; flex: 1; font: inherit; }
+  button { font: inherit; font-weight: 600; padding: 8px 18px; border-radius: 4px;
+           border: none; cursor: pointer; }
+  .resume { background: #2f7d4f; color: #fff; }
+  .abort { background: #8a3838; color: #fff; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px;
+          font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+  .pill.open { background: #7a5c1a; color: #ffd97a; }
+  .pill.resolved { background: #1e4d33; color: #7ee2a8; }
+  .pill.aborted, .pill.timed_out { background: #4d1e1e; color: #ffa0a0; }
+  .banner { background: #1a3350; border-left: 3px solid #4a90d9; padding: 12px 16px;
+            border-radius: 3px; margin-bottom: 16px; font-size: 13px; }
+  a { color: #6fb3f2; }
+</style></head><body>
+<header><h1>Operator Console <span>— interface.ai computer-use automation</span></h1></header>
+<div class="wrap"><div class="card">
+    <h2>Open a new member sub-account <span class="pill open">open</span></h2>
+    <div class="muted">request dbfa017e &middot; raised 2026-08-13T20:42:01.733Z</div>
+    <div class="reason"><b>Why automation stopped:</b> step is classified "irreversible" and the replay profile requires "confirm" for that class</div>
+    
+    <table class="kv">
+      <tr><td>Capability</td><td><code>member.open-subaccount</code> v1 &mdash; Open a new member sub-account</td></tr>
+      <tr><td>Goal</td><td>Look up a member and open a new share sub-account of the requested type, returning the new account number from the confirmation screen.</td></tr>
+      <tr><td>Stopped at step</td><td>9 of 10: <b>Create the sub-account — IRREVERSIBLE: this opens a real account on the member's record</b>
+        <span class="muted">(risk: irreversible)</span></td></tr>
+      <tr><td>Current URL</td><td><code>http://localhost:3100/</code></td></tr>
+      <tr><td>Inputs</td><td><code>{"memberId":"****42","accountType":"S2"}</code> <span class="muted">(redacted)</span></td></tr>
+      <tr><td>Expected</td><td>the confirmation screen is displayed after account creation</td></tr>
+      <tr><td>Observed</td><td>automation stopped before executing this step</td></tr>
+      <tr><td>Run</td><td><code>0ad6f5e0</code></td></tr>
+    </table><img class="shot" src="/screenshot/dbfa017e" alt="live session at the moment automation stopped"><div class="banner">
+           <b>You now hold the session.</b> The automation is blocked from acting until you hand
+           control back. Drive the headed browser window directly &mdash; it is the same live
+           session, mid-flow. When the manual steps are done, click Resume.
+         </div>
+         <form class="actions" method="post" action="/resolve/dbfa017e">
+           <input type="text" name="note" placeholder="What did you do? (recorded in the run log)">
+           <button class="resume" name="action" value="resume">Resume automation</button>
+           <button class="abort" name="action" value="abort">Abort run</button>
+         </form>
+    
+  </div><a href="/">&larr; All requests</a></div></body></html>

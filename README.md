@@ -1,0 +1,176 @@
+# Computer-Use Automation System
+
+An LLM figures out how to do a task in a legacy bank application once. That run becomes a
+typed, reviewable **capability artifact**. From then on the flow replays deterministically
+with no model in the loop, handles the runtime conditions that legitimately occur, and
+escalates to a human when it can't safely proceed.
+
+```
+  goal ──▶ discovery run ──▶ capability artifact ──▶ deterministic replay ──▶ result
+         (LLM in the loop)     (typed, versioned,      (no LLM, guardrailed,   (success /
+                                human-reviewable)       verified, escalates)   business
+                                                                               outcome /
+                                                                               failure)
+```
+
+The design rationale, trade-offs and cut lines are in [REPORT.md](REPORT.md).
+Real output from every scenario is in [evidence/](evidence/README.md).
+
+## Setup
+
+```bash
+npm install
+npx playwright install chromium
+```
+
+Node 22+. No other services required — the target application runs locally.
+
+**Only discovery needs an API key.** Replay, escalation, the operator console, the
+capability catalog and the tests all run without one, against the committed artifacts.
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...   # required for `npm run discover` only
+```
+
+## Demo path
+
+Start the target application and leave it running:
+
+```bash
+npm run target-app          # http://localhost:3100
+```
+
+### 1. Discovery — one real LLM-driven run
+
+```bash
+npm run discover -- --goal "Look up member 100442 and read their current savings balance" --headed
+```
+
+The model perceives the screen as an accessibility index and acts by element reference —
+it never sees or emits a CSS selector. On success it writes
+`artifacts/member.read-savings-balance/v1.json` plus a full run log under `runs/`.
+
+The artifact is written as `draft`: an LLM authored it and no human has reviewed it. Read
+it, then promote it:
+
+```bash
+npm run catalog -- approve member.read-savings-balance
+```
+
+### 2. Deterministic replay — no LLM
+
+```bash
+npm run replay -- --capability member.read-savings-balance --input memberId=100442
+```
+
+```
+STATUS   success
+OUTPUTS  { "savingsBalance": "4,182.55" }
+TRACE    7 step(s), 813ms
+```
+
+### 3. The interesting part — runtime conditions
+
+A member number that doesn't exist is an **answer**, not a crash:
+
+```bash
+npm run replay -- --capability member.read-savings-balance --input memberId=999999
+```
+
+```
+STATUS   business_outcome     <- a legitimate answer, not a failure
+OUTCOME  MEMBER_NOT_FOUND
+```
+
+`--fault` injects a runtime condition on demand, so the exceptional paths are
+reproducible rather than something you wait to get lucky with:
+
+```bash
+npm run replay -- --capability member.read-savings-balance --input memberId=100442 --fault timeout
+#   session expires mid-flow -> re-authenticates on the same session -> success
+
+npm run replay -- --capability member.read-savings-balance --input memberId=100442 --fault dialog
+#   unexpected interstitial -> dismisses it -> success
+
+npm run replay -- --capability member.read-savings-balance --input memberId=100442 --fault permdenied
+#   business_outcome / ACCESS_DENIED
+
+npm run replay -- --capability member.read-savings-balance --input memberId=abc
+#   failure / contract_violation, before the browser is even launched
+```
+
+Faults: `notfound` `validation` `permdenied` `timeout` `dialog` `slow`.
+
+### 4. Human escalation on the live session
+
+The second capability ends in an irreversible step (opening a real account), which the
+policy will not let automation perform unattended.
+
+```bash
+npm run operator            # http://localhost:3200, in another shell
+
+npm run replay -- --capability member.open-subaccount \
+  --input memberId=100442 --input accountType=S2 --headed
+```
+
+The run pauses at the irreversible step and files an intervention request. Open the
+operator console: it shows which capability, which step, why it stopped, the redacted
+inputs and a screenshot of the live session. The headed browser is that same session —
+same cookies, same half-filled form — so you can drive it yourself. Click **Resume** and
+the automation takes control back, re-verifies where it is, and completes:
+
+```
+STATUS   success
+OUTPUTS  { "newAccountNumber": "100442-S2" }
+HUMAN    1 intervention(s):
+         · s09: operator local-operator, 11024ms
+```
+
+### 5. The capability catalog
+
+What a calling AI agent would be handed:
+
+```bash
+npm run catalog                                        # list
+npm run catalog -- show member.read-savings-balance    # full JSON tool definition
+```
+
+### Tests
+
+```bash
+npm test        # 29 tests: schema contracts, locator ladder, guardrails, redaction
+npm run typecheck
+```
+
+## Layout
+
+| Path | What it is |
+|---|---|
+| `src/schema/artifact.ts` | **The capability artifact schema.** Start here. |
+| `src/schema/result.ts` | The replay result contract returned to a caller. |
+| `src/surface/surface.ts` | The `Surface` seam — perceive / act, surface-agnostic. |
+| `src/surface/web/resolve-target.ts` | The locator ladder: how replay finds a control. |
+| `src/replay/engine.ts` | Deterministic executor. No LLM is reachable from here. |
+| `src/agent/loop.ts` | The one place a model is in the decision loop. |
+| `src/policy/` | Allowlist, risk classes, redaction. |
+| `src/escalation/` | Control token, intervention queue, operator console. |
+| `target-app/server.ts` | The hostile legacy app, with fault injection. |
+| `policy.yaml` | Guardrail configuration. |
+
+## Configuration
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | — | Discovery only |
+| `TARGET_APP_PORT` | `3100` | Target application |
+| `OPERATOR_PORT` | `3200` | Operator console |
+| `POLICY_PATH` | `policy.yaml` | Guardrail config |
+| `ARTIFACTS_DIR` | `artifacts` | Capability store |
+| `RUNS_DIR` | `runs` | Run logs and evidence |
+
+## A note on the committed artifacts
+
+The two artifacts in `artifacts/` are **hand-authored fixtures**, marked as such in their
+`provenance.model` field, so that everything except discovery is runnable without an API
+key. They are shaped exactly as the recorder emits them. Running discovery yourself will
+produce a genuine one alongside them.

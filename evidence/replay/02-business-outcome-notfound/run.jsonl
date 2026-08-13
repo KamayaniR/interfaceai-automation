@@ -1,0 +1,21 @@
+{"at":"2026-08-13T20:41:06.508Z","runId":"b3869a34","type":"replay.start","capability":"member.read-savings-balance","version":1,"status":"approved","inputs":{"memberId":"****99"}}
+{"at":"2026-08-13T20:41:06.667Z","runId":"b3869a34","type":"step.start","stepId":"s01","intent":"Open the CoreVue back-office entry point","risk":"safe"}
+{"at":"2026-08-13T20:41:06.667Z","runId":"b3869a34","type":"policy.check","action":"navigate","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T20:41:06.694Z","runId":"b3869a34","type":"step.end","stepId":"s01","status":"ok","durationMs":27}
+{"at":"2026-08-13T20:41:06.694Z","runId":"b3869a34","type":"step.start","stepId":"s02","intent":"Enter the operator ID into the sign-on form","risk":"safe"}
+{"at":"2026-08-13T20:41:06.694Z","runId":"b3869a34","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T20:41:06.722Z","runId":"b3869a34","type":"step.end","stepId":"s02","status":"ok","durationMs":28}
+{"at":"2026-08-13T20:41:06.722Z","runId":"b3869a34","type":"step.start","stepId":"s03","intent":"Enter the operator password into the sign-on form","risk":"safe"}
+{"at":"2026-08-13T20:41:06.722Z","runId":"b3869a34","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T20:41:06.762Z","runId":"b3869a34","type":"step.end","stepId":"s03","status":"ok","durationMs":40}
+{"at":"2026-08-13T20:41:06.763Z","runId":"b3869a34","type":"step.start","stepId":"s04","intent":"Submit the sign-on form","risk":"safe"}
+{"at":"2026-08-13T20:41:06.763Z","runId":"b3869a34","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T20:41:06.857Z","runId":"b3869a34","type":"step.end","stepId":"s04","status":"ok","durationMs":94}
+{"at":"2026-08-13T20:41:06.857Z","runId":"b3869a34","type":"step.start","stepId":"s05","intent":"Type the member number into the lookup field","risk":"safe"}
+{"at":"2026-08-13T20:41:06.858Z","runId":"b3869a34","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T20:41:06.869Z","runId":"b3869a34","type":"step.end","stepId":"s05","status":"ok","durationMs":12}
+{"at":"2026-08-13T20:41:06.869Z","runId":"b3869a34","type":"step.start","stepId":"s06","intent":"Submit the member lookup","risk":"safe"}
+{"at":"2026-08-13T20:41:06.869Z","runId":"b3869a34","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T20:41:06.934Z","runId":"b3869a34","type":"condition.fired","stepId":"s06","condition":"member-not-found","then":"business-outcome"}
+{"at":"2026-08-13T20:41:06.934Z","runId":"b3869a34","type":"step.end","stepId":"s06","status":"ok","durationMs":65}
+{"at":"2026-08-13T20:41:06.934Z","runId":"b3869a34","type":"replay.business_outcome","code":"MEMBER_NOT_FOUND","message":"No member record exists with that member number. This is a legitimate answer, not a failure."}

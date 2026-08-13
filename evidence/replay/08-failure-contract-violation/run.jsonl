@@ -1,0 +1,2 @@
+{"at":"2026-08-13T20:41:19.559Z","runId":"9dc3f356","type":"replay.start","capability":"member.read-savings-balance","version":1,"status":"approved","inputs":{"memberId":"*****************er"}}
+{"at":"2026-08-13T20:41:19.560Z","runId":"9dc3f356","type":"replay.failure","class":"contract_violation","stepId":null,"message":"input \"memberId\" does not satisfy its declared pattern","expected":"/^\\d{6}$/","observed":"a 19-character value that did not match"}

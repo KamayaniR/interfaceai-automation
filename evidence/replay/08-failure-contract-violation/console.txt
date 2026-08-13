@@ -1,0 +1,18 @@
+
+Replaying member.read-savings-balance v1 (approved)
+  no LLM in the decision loop
+
+
+────────────────────────────────────────────────────────────────
+STATUS   failure
+CLASS    contract_violation
+STEP     (pre-flight)
+MESSAGE  input "memberId" does not satisfy its declared pattern
+EXPECTED /^\d{6}$/
+OBSERVED a 19-character value that did not match
+
+TRACE    0 step(s), 8ms
+
+EVIDENCE runs/replay-9dc3f356/run.jsonl
+────────────────────────────────────────────────────────────────
+

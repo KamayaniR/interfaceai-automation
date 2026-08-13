@@ -1,0 +1,21 @@
+
+Replaying member.read-savings-balance v1 (approved)
+  no LLM in the decision loop
+
+
+────────────────────────────────────────────────────────────────
+STATUS   business_outcome     <- a legitimate answer, not a failure
+OUTCOME  MEMBER_NUMBER_INVALID
+         The member number was rejected by the application's own validation.
+
+TRACE    6 step(s), 447ms
+         ok        s01  Open the CoreVue back-office entry point
+         ok        s02  Enter the operator ID into the sign-on form
+         ok        s03  Enter the operator password into the sign-on form
+         ok        s04  Submit the sign-on form
+         ok        s05  Type the member number into the lookup field
+         ok        s06  Submit the member lookup  [condition: member-number-invalid]
+
+EVIDENCE runs/replay-8e1275c9/run.jsonl
+────────────────────────────────────────────────────────────────
+

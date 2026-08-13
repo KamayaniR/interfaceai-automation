@@ -1,0 +1,33 @@
+
+Replaying member.open-subaccount v1 (approved)
+  no LLM in the decision loop
+
+
+  [escalation] step is classified "irreversible" and the replay profile requires "confirm" for that class
+  [escalation] request dbfa017e — open the operator console to take control
+
+
+────────────────────────────────────────────────────────────────
+STATUS   success
+OUTPUTS  {
+           "newAccountNumber": "100442-S2"
+         }
+
+HUMAN    1 intervention(s):
+         · s09: operator local-operator, 0 action(s) recorded, 11024ms
+
+TRACE    10 step(s), 12057ms
+         ok        s01  Open the CoreVue back-office entry point
+         ok        s02  Enter the operator ID into the sign-on form
+         ok        s03  Enter the operator password into the sign-on form
+         ok        s04  Submit the sign-on form
+         ok        s05  Type the member number into the lookup field
+         ok        s06  Submit the member lookup
+         ok        s07  Follow the link to open a new sub-account for this member
+         ok        s08  Choose the requested share account type
+         ok        s09  Create the sub-account — IRREVERSIBLE: this opens a real account on the member's record
+         ok        s10  Read the new account number from the confirmation screen
+
+EVIDENCE runs/replay-0ad6f5e0/run.jsonl
+────────────────────────────────────────────────────────────────
+

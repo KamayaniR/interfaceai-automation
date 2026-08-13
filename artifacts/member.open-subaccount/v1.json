@@ -1,0 +1,692 @@
+{
+  "schemaVersion": "1.0",
+  "capability": {
+    "id": "member.open-subaccount",
+    "version": 1,
+    "name": "Open a new member sub-account",
+    "description": "Look up a member and open a new share sub-account of the requested type, returning the new account number from the confirmation screen.",
+    "status": "approved"
+  },
+  "app": {
+    "appId": "corevue",
+    "vendor": "meridian-systems",
+    "variantOf": null,
+    "tenantId": null,
+    "entryUrl": "http://localhost:3100"
+  },
+  "inputs": {
+    "memberId": {
+      "type": "string",
+      "description": "The member's 6-digit CoreVue member number.",
+      "required": true,
+      "pattern": "^\\d{6}$",
+      "sensitivity": "pii"
+    },
+    "accountType": {
+      "type": "string",
+      "description": "Share account type code to open. S2 = Secondary Savings, S3 = Holiday Club.",
+      "required": true,
+      "pattern": "^S[23]$",
+      "sensitivity": "public",
+      "example": "S2"
+    }
+  },
+  "outputs": {
+    "newAccountNumber": {
+      "type": "string",
+      "description": "The account number assigned to the newly created sub-account.",
+      "sensitivity": "pii"
+    }
+  },
+  "outcomes": [
+    {
+      "code": "MEMBER_NOT_FOUND",
+      "description": "No member record exists with that member number. This is a legitimate answer, not a failure.",
+      "terminal": true
+    },
+    {
+      "code": "ACCESS_DENIED",
+      "description": "The operator's role is not authorised to view this member record.",
+      "terminal": true
+    }
+  ],
+  "preconditions": [],
+  "steps": [
+    {
+      "id": "s01",
+      "intent": "Open the CoreVue back-office entry point",
+      "action": {
+        "kind": "navigate",
+        "url": "http://localhost:3100"
+      },
+      "risk": "safe",
+      "waitFor": {
+        "kind": "text-present",
+        "text": "Operator Sign On",
+        "framePath": [
+          "content"
+        ],
+        "timeoutMs": 10000,
+        "description": "the sign-on screen is displayed in the content frame"
+      },
+      "onCondition": []
+    },
+    {
+      "id": "s02",
+      "intent": "Enter the operator ID into the sign-on form",
+      "action": {
+        "kind": "type",
+        "value": "svc_automation",
+        "clearFirst": true
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "textbox",
+            "name": "Operator ID",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "label-proximity",
+            "labelText": "Operator ID",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "structural",
+            "formIndex": -1,
+            "controlIndex": 0
+          }
+        ],
+        "fingerprint": {
+          "tagName": "input",
+          "inputType": "text",
+          "attrs": {
+            "name": "f_01",
+            "type": "text"
+          }
+        }
+      },
+      "risk": "safe",
+      "onCondition": []
+    },
+    {
+      "id": "s03",
+      "intent": "Enter the operator password into the sign-on form",
+      "action": {
+        "kind": "type",
+        "value": "not-a-real-password",
+        "clearFirst": true
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "textbox",
+            "name": "Password",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "label-proximity",
+            "labelText": "Password",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "structural",
+            "formIndex": -1,
+            "controlIndex": 1
+          }
+        ],
+        "fingerprint": {
+          "tagName": "input",
+          "inputType": "password",
+          "attrs": {
+            "name": "f_02",
+            "type": "password"
+          }
+        }
+      },
+      "risk": "safe",
+      "onCondition": []
+    },
+    {
+      "id": "s04",
+      "intent": "Submit the sign-on form",
+      "action": {
+        "kind": "click"
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "button",
+            "name": "Sign On",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "role-name",
+            "role": "button",
+            "name": "Sign On",
+            "nameIsSubstring": true
+          },
+          {
+            "by": "structural",
+            "formIndex": 0,
+            "controlIndex": 0
+          }
+        ],
+        "fingerprint": {
+          "tagName": "input",
+          "inputType": "submit",
+          "attrs": {
+            "type": "submit"
+          }
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "kind": "text-present",
+        "text": "Member Number",
+        "framePath": [
+          "content"
+        ],
+        "timeoutMs": 10000,
+        "description": "the Member Lookup form is loaded in the content frame (scoped to the frame: the nav chrome also contains the words \"Member Lookup\", so an unscoped check would pass before the content frame had navigated)"
+      },
+      "onCondition": []
+    },
+    {
+      "id": "s05",
+      "intent": "Type the member number into the lookup field",
+      "action": {
+        "kind": "type",
+        "value": "{{memberId}}",
+        "clearFirst": true
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "textbox",
+            "name": "Member Number",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "label-proximity",
+            "labelText": "Member Number",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "role-name",
+            "role": "textbox",
+            "name": "Member Number",
+            "nameIsSubstring": true
+          },
+          {
+            "by": "structural",
+            "formIndex": 0,
+            "controlIndex": 0
+          }
+        ],
+        "fingerprint": {
+          "tagName": "input",
+          "inputType": "text",
+          "attrs": {
+            "name": "f_mbr",
+            "type": "text"
+          }
+        }
+      },
+      "risk": "safe",
+      "onCondition": []
+    },
+    {
+      "id": "s06",
+      "intent": "Submit the member lookup",
+      "action": {
+        "kind": "click"
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "button",
+            "name": "Search",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "role-name",
+            "role": "button",
+            "name": "Search",
+            "nameIsSubstring": true
+          },
+          {
+            "by": "structural",
+            "formIndex": 0,
+            "controlIndex": 1
+          }
+        ],
+        "fingerprint": {
+          "tagName": "input",
+          "inputType": "submit",
+          "attrs": {
+            "type": "submit"
+          }
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "kind": "text-present",
+        "text": "Member Detail",
+        "framePath": [
+          "content"
+        ],
+        "timeoutMs": 12000,
+        "description": "the Member Detail screen is displayed in the content frame"
+      },
+      "onCondition": [
+        {
+          "when": {
+            "id": "member-not-found",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "No member record found matching that number."
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NOT_FOUND"
+          }
+        },
+        {
+          "when": {
+            "id": "access-denied",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "SEC-0412"
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "ACCESS_DENIED"
+          }
+        },
+        {
+          "when": {
+            "id": "session-expired",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "Your session has expired"
+              }
+            ]
+          },
+          "then": {
+            "then": "recover",
+            "maxAttempts": 2,
+            "recovery": [
+              {
+                "id": "r01",
+                "intent": "Re-enter the operator ID after the session expired",
+                "action": {
+                  "kind": "type",
+                  "value": "svc_automation",
+                  "clearFirst": true
+                },
+                "target": {
+                  "framePath": [
+                    "content"
+                  ],
+                  "candidates": [
+                    {
+                      "by": "role-name",
+                      "role": "textbox",
+                      "name": "Operator ID",
+                      "nameIsSubstring": false
+                    },
+                    {
+                      "by": "label-proximity",
+                      "labelText": "Operator ID",
+                      "direction": "right",
+                      "index": 0
+                    }
+                  ]
+                },
+                "risk": "safe",
+                "onCondition": []
+              },
+              {
+                "id": "r02",
+                "intent": "Re-enter the operator password after the session expired",
+                "action": {
+                  "kind": "type",
+                  "value": "not-a-real-password",
+                  "clearFirst": true
+                },
+                "target": {
+                  "framePath": [
+                    "content"
+                  ],
+                  "candidates": [
+                    {
+                      "by": "role-name",
+                      "role": "textbox",
+                      "name": "Password",
+                      "nameIsSubstring": false
+                    },
+                    {
+                      "by": "label-proximity",
+                      "labelText": "Password",
+                      "direction": "right",
+                      "index": 0
+                    }
+                  ]
+                },
+                "risk": "safe",
+                "onCondition": []
+              },
+              {
+                "id": "r03",
+                "intent": "Sign on again to restore the session",
+                "action": {
+                  "kind": "click"
+                },
+                "target": {
+                  "framePath": [
+                    "content"
+                  ],
+                  "candidates": [
+                    {
+                      "by": "role-name",
+                      "role": "button",
+                      "name": "Sign On",
+                      "nameIsSubstring": false
+                    }
+                  ]
+                },
+                "risk": "safe",
+                "waitFor": {
+                  "kind": "text-present",
+                  "text": "Member Number",
+                  "framePath": [
+                    "content"
+                  ],
+                  "timeoutMs": 10000,
+                  "description": "the session is restored and the Member Lookup form is reachable again"
+                },
+                "onCondition": []
+              },
+              {
+                "id": "r04",
+                "intent": "Re-enter the member number after re-authenticating",
+                "action": {
+                  "kind": "type",
+                  "value": "{{memberId}}",
+                  "clearFirst": true
+                },
+                "target": {
+                  "framePath": [
+                    "content"
+                  ],
+                  "candidates": [
+                    {
+                      "by": "role-name",
+                      "role": "textbox",
+                      "name": "Member Number",
+                      "nameIsSubstring": false
+                    },
+                    {
+                      "by": "label-proximity",
+                      "labelText": "Member Number",
+                      "direction": "right",
+                      "index": 0
+                    }
+                  ]
+                },
+                "risk": "safe",
+                "onCondition": []
+              }
+            ]
+          }
+        },
+        {
+          "when": {
+            "id": "maintenance-interstitial",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "Scheduled maintenance window begins"
+              }
+            ]
+          },
+          "then": {
+            "then": "recover",
+            "maxAttempts": 2,
+            "recovery": [
+              {
+                "id": "r10",
+                "intent": "Dismiss the scheduled-maintenance interstitial",
+                "action": {
+                  "kind": "click"
+                },
+                "target": {
+                  "framePath": [
+                    "content"
+                  ],
+                  "candidates": [
+                    {
+                      "by": "role-name",
+                      "role": "link",
+                      "name": "Acknowledge",
+                      "nameIsSubstring": false
+                    },
+                    {
+                      "by": "role-name",
+                      "role": "link",
+                      "name": "Acknowledge",
+                      "nameIsSubstring": true
+                    }
+                  ]
+                },
+                "risk": "safe",
+                "onCondition": []
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "s07",
+      "intent": "Follow the link to open a new sub-account for this member",
+      "action": {
+        "kind": "click"
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "link",
+            "name": "Open New Sub-Account",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "role-name",
+            "role": "link",
+            "name": "Sub-Account",
+            "nameIsSubstring": true
+          }
+        ],
+        "fingerprint": {
+          "tagName": "a",
+          "attrs": {}
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "kind": "text-present",
+        "text": "Account Type",
+        "framePath": [
+          "content"
+        ],
+        "timeoutMs": 10000,
+        "description": "the sub-account creation form is displayed in the content frame"
+      },
+      "onCondition": []
+    },
+    {
+      "id": "s08",
+      "intent": "Choose the requested share account type",
+      "action": {
+        "kind": "select",
+        "value": "{{accountType}}"
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "combobox",
+            "name": "Account Type",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "label-proximity",
+            "labelText": "Account Type",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "structural",
+            "formIndex": 0,
+            "controlIndex": 0
+          }
+        ],
+        "fingerprint": {
+          "tagName": "select",
+          "attrs": {
+            "name": "ctl_07"
+          }
+        }
+      },
+      "risk": "safe",
+      "onCondition": []
+    },
+    {
+      "id": "s09",
+      "intent": "Create the sub-account \u2014 IRREVERSIBLE: this opens a real account on the member's record",
+      "action": {
+        "kind": "click"
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "button",
+            "name": "Create Account",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "role-name",
+            "role": "button",
+            "name": "Create",
+            "nameIsSubstring": true
+          }
+        ],
+        "fingerprint": {
+          "tagName": "input",
+          "inputType": "submit",
+          "attrs": {
+            "type": "submit"
+          }
+        }
+      },
+      "risk": "irreversible",
+      "waitFor": {
+        "kind": "text-present",
+        "text": "Sub-Account Created",
+        "framePath": [
+          "content"
+        ],
+        "timeoutMs": 10000,
+        "description": "the confirmation screen is displayed after account creation"
+      },
+      "onCondition": []
+    },
+    {
+      "id": "s10",
+      "intent": "Read the new account number from the confirmation screen",
+      "action": {
+        "kind": "extract",
+        "outputName": "newAccountNumber",
+        "from": "text"
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "label-proximity",
+            "labelText": "New Account Number",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "anchor-relative",
+            "anchorText": "New Account Number",
+            "role": "text",
+            "offset": 0
+          }
+        ]
+      },
+      "risk": "safe",
+      "onCondition": []
+    }
+  ],
+  "checkpoint": {
+    "kind": "text-present",
+    "text": "Sub-Account Created",
+    "framePath": [
+      "content"
+    ],
+    "timeoutMs": 15000,
+    "description": "the confirmation screen for the newly created sub-account is displayed in the content frame"
+  },
+  "provenance": {
+    "model": "hand-authored-fixture",
+    "runId": "fixture-0002",
+    "discoveredAt": "2026-08-13T00:00:00.000Z",
+    "transcriptDigest": "0000000000000000"
+  }
+}

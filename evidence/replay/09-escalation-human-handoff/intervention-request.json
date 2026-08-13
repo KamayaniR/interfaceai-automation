@@ -1,0 +1,36 @@
+{
+  "runId": "0ad6f5e0",
+  "capability": {
+    "id": "member.open-subaccount",
+    "version": 1,
+    "name": "Open a new member sub-account"
+  },
+  "goal": "Look up a member and open a new share sub-account of the requested type, returning the new account number from the confirmation screen.",
+  "step": {
+    "id": "s09",
+    "index": 9,
+    "total": 10,
+    "intent": "Create the sub-account — IRREVERSIBLE: this opens a real account on the member's record",
+    "risk": "irreversible"
+  },
+  "reason": "step is classified \"irreversible\" and the replay profile requires \"confirm\" for that class",
+  "expected": "the confirmation screen is displayed after account creation",
+  "observed": "automation stopped before executing this step",
+  "inputs": {
+    "memberId": "****42",
+    "accountType": "S2"
+  },
+  "screenshotPath": "runs/replay-0ad6f5e0/escalation-s09.png",
+  "currentUrl": "http://localhost:3100/",
+  "id": "dbfa017e",
+  "createdAt": "2026-08-13T20:42:01.733Z",
+  "status": "resolved",
+  "resolution": {
+    "operator": "local-operator",
+    "action": "resume",
+    "note": "Verified member eligibility in the core; approved opening the S2 share.",
+    "tookControlAt": "2026-08-13T20:42:01.733Z",
+    "returnedControlAt": "2026-08-13T20:42:12.757Z",
+    "recordedActions": []
+  }
+}

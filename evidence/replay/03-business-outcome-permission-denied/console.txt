@@ -1,0 +1,21 @@
+
+Replaying member.read-savings-balance v1 (approved)
+  no LLM in the decision loop
+
+
+────────────────────────────────────────────────────────────────
+STATUS   business_outcome     <- a legitimate answer, not a failure
+OUTCOME  ACCESS_DENIED
+         The operator's role is not authorised to view this member record.
+
+TRACE    6 step(s), 474ms
+         ok        s01  Open the CoreVue back-office entry point
+         ok        s02  Enter the operator ID into the sign-on form
+         ok        s03  Enter the operator password into the sign-on form
+         ok        s04  Submit the sign-on form
+         ok        s05  Type the member number into the lookup field
+         ok        s06  Submit the member lookup  [condition: access-denied]
+
+EVIDENCE runs/replay-8c8d3712/run.jsonl
+────────────────────────────────────────────────────────────────
+

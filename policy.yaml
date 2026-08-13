@@ -1,0 +1,58 @@
+# Safety and policy guardrails.
+#
+# Enforced in exactly one place — Surface.act() — so discovery and replay are covered
+# by the same rules and there is no path to the browser that bypasses them.
+#
+# Two profiles. Discovery is deliberately stricter than replay: during discovery an LLM
+# is choosing the actions, so it gets read-mostly access and is not permitted to execute
+# an irreversible step at all. Replay executes a flow a human has reviewed and approved,
+# so it may perform the irreversible step — but only behind a human confirmation.
+
+allowlist:
+  # Origins the agent may drive. Anything else is blocked before navigation.
+  origins:
+    - "http://localhost:3100"
+  # Path patterns (regex, matched against pathname). Empty list = all paths on an
+  # allowed origin.
+  paths:
+    - "^/$"
+    - "^/nav$"
+    - "^/login$"
+    - "^/search$"
+    - "^/member$"
+    - "^/subaccount$"
+
+profiles:
+  discovery:
+    # The model may look and navigate freely, and fill forms, but the guardrail below
+    # stops it short of committing anything it cannot take back.
+    allowedActions: [navigate, click, type, select, press, extract, assert]
+    risk:
+      safe: allow
+      mutating: allow          # audited in the run log
+      irreversible: escalate   # record the step, hand to a human, never auto-execute
+
+  replay:
+    allowedActions: [navigate, click, type, select, press, extract, assert]
+    risk:
+      safe: allow
+      mutating: allow
+      irreversible: confirm    # pause and require an operator decision on the live session
+
+redaction:
+  # Values matching these patterns are masked in logs, artifacts and error messages
+  # regardless of how they were declared. Belt and braces on top of the per-parameter
+  # `sensitivity` field in the artifact schema.
+  patterns:
+    - name: "us-ssn"
+      regex: "\\b\\d{3}-\\d{2}-\\d{4}\\b"
+    - name: "pan"
+      regex: "\\b(?:\\d[ -]*?){13,19}\\b"
+    - name: "bearer-token"
+      regex: "\\b(bearer|token|api[_-]?key)\\s*[:=]\\s*\\S+"
+      flags: "gi"
+  # Environment variables that hold credentials. Never written anywhere, ever.
+  secretEnvVars:
+    - "COREVUE_OPERATOR_ID"
+    - "COREVUE_PASSWORD"
+    - "ANTHROPIC_API_KEY"
