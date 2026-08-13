@@ -1,30 +1,30 @@
-{"at":"2026-08-13T20:41:11.122Z","runId":"46099cf5","type":"replay.start","capability":"member.read-savings-balance","version":1,"status":"approved","inputs":{"memberId":"****42"}}
-{"at":"2026-08-13T20:41:11.272Z","runId":"46099cf5","type":"step.start","stepId":"s01","intent":"Open the CoreVue back-office entry point","risk":"safe"}
-{"at":"2026-08-13T20:41:11.272Z","runId":"46099cf5","type":"policy.check","action":"navigate","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:41:11.300Z","runId":"46099cf5","type":"step.end","stepId":"s01","status":"ok","durationMs":28}
-{"at":"2026-08-13T20:41:11.300Z","runId":"46099cf5","type":"step.start","stepId":"s02","intent":"Enter the operator ID into the sign-on form","risk":"safe"}
-{"at":"2026-08-13T20:41:11.300Z","runId":"46099cf5","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:41:11.328Z","runId":"46099cf5","type":"step.end","stepId":"s02","status":"ok","durationMs":28}
-{"at":"2026-08-13T20:41:11.328Z","runId":"46099cf5","type":"step.start","stepId":"s03","intent":"Enter the operator password into the sign-on form","risk":"safe"}
-{"at":"2026-08-13T20:41:11.328Z","runId":"46099cf5","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:41:11.374Z","runId":"46099cf5","type":"step.end","stepId":"s03","status":"ok","durationMs":46}
-{"at":"2026-08-13T20:41:11.374Z","runId":"46099cf5","type":"step.start","stepId":"s04","intent":"Submit the sign-on form","risk":"safe"}
-{"at":"2026-08-13T20:41:11.374Z","runId":"46099cf5","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:41:11.461Z","runId":"46099cf5","type":"step.end","stepId":"s04","status":"ok","durationMs":87}
-{"at":"2026-08-13T20:41:11.462Z","runId":"46099cf5","type":"step.start","stepId":"s05","intent":"Type the member number into the lookup field","risk":"safe"}
-{"at":"2026-08-13T20:41:11.462Z","runId":"46099cf5","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:41:11.481Z","runId":"46099cf5","type":"step.end","stepId":"s05","status":"ok","durationMs":19}
-{"at":"2026-08-13T20:41:11.481Z","runId":"46099cf5","type":"step.start","stepId":"s06","intent":"Submit the member lookup","risk":"safe"}
-{"at":"2026-08-13T20:41:11.482Z","runId":"46099cf5","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:41:11.562Z","runId":"46099cf5","type":"condition.fired","stepId":"s06","condition":"maintenance-interstitial","then":"recover"}
-{"at":"2026-08-13T20:41:11.563Z","runId":"46099cf5","type":"recovery.attempt","stepId":"s06","condition":"maintenance-interstitial","attempt":1,"max":2}
-{"at":"2026-08-13T20:41:11.563Z","runId":"46099cf5","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:41:11.620Z","runId":"46099cf5","type":"recovery.succeeded","stepId":"s06","condition":"maintenance-interstitial","attempt":1}
-{"at":"2026-08-13T20:41:11.620Z","runId":"46099cf5","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:41:11.622Z","runId":"46099cf5","type":"action.failed","stepId":"s06","error":"could not uniquely resolve target in frame [content]; tried role-name=0 match(es), role-name=0 match(es), structural=0 match(es)"}
-{"at":"2026-08-13T20:41:11.625Z","runId":"46099cf5","type":"step.end","stepId":"s06","status":"recovered","durationMs":144}
-{"at":"2026-08-13T20:41:11.625Z","runId":"46099cf5","type":"step.start","stepId":"s07","intent":"Read the S1 savings current balance from the Share Accounts panel","risk":"safe"}
-{"at":"2026-08-13T20:41:11.625Z","runId":"46099cf5","type":"policy.check","action":"extract","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:41:11.633Z","runId":"46099cf5","type":"output.captured","name":"savingsBalance","value":"******55"}
-{"at":"2026-08-13T20:41:11.633Z","runId":"46099cf5","type":"step.end","stepId":"s07","status":"ok","durationMs":8}
-{"at":"2026-08-13T20:41:11.635Z","runId":"46099cf5","type":"replay.success","outputs":{"savingsBalance":"4,182.55"}}
+{"at":"2026-08-13T22:12:09.088Z","runId":"4eef54d3","type":"replay.start","capability":"member.read-savings-balance","version":1,"status":"approved","inputs":{"memberId":"****42"}}
+{"at":"2026-08-13T22:12:09.239Z","runId":"4eef54d3","type":"step.start","stepId":"s01","intent":"Open the CoreVue back-office entry point","risk":"safe"}
+{"at":"2026-08-13T22:12:09.239Z","runId":"4eef54d3","type":"policy.check","action":"navigate","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T22:12:09.266Z","runId":"4eef54d3","type":"step.end","stepId":"s01","status":"ok","durationMs":27}
+{"at":"2026-08-13T22:12:09.266Z","runId":"4eef54d3","type":"step.start","stepId":"s02","intent":"Enter the operator ID into the sign-on form","risk":"safe"}
+{"at":"2026-08-13T22:12:09.266Z","runId":"4eef54d3","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T22:12:09.295Z","runId":"4eef54d3","type":"step.end","stepId":"s02","status":"ok","durationMs":29}
+{"at":"2026-08-13T22:12:09.295Z","runId":"4eef54d3","type":"step.start","stepId":"s03","intent":"Enter the operator password into the sign-on form","risk":"safe"}
+{"at":"2026-08-13T22:12:09.295Z","runId":"4eef54d3","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T22:12:09.333Z","runId":"4eef54d3","type":"step.end","stepId":"s03","status":"ok","durationMs":38}
+{"at":"2026-08-13T22:12:09.334Z","runId":"4eef54d3","type":"step.start","stepId":"s04","intent":"Submit the sign-on form","risk":"safe"}
+{"at":"2026-08-13T22:12:09.334Z","runId":"4eef54d3","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T22:12:09.429Z","runId":"4eef54d3","type":"step.end","stepId":"s04","status":"ok","durationMs":95}
+{"at":"2026-08-13T22:12:09.429Z","runId":"4eef54d3","type":"step.start","stepId":"s05","intent":"Type the member number into the lookup field","risk":"safe"}
+{"at":"2026-08-13T22:12:09.430Z","runId":"4eef54d3","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T22:12:09.442Z","runId":"4eef54d3","type":"step.end","stepId":"s05","status":"ok","durationMs":13}
+{"at":"2026-08-13T22:12:09.442Z","runId":"4eef54d3","type":"step.start","stepId":"s06","intent":"Submit the member lookup","risk":"safe"}
+{"at":"2026-08-13T22:12:09.442Z","runId":"4eef54d3","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T22:12:09.517Z","runId":"4eef54d3","type":"condition.fired","stepId":"s06","condition":"maintenance-interstitial","then":"recover"}
+{"at":"2026-08-13T22:12:09.517Z","runId":"4eef54d3","type":"recovery.attempt","stepId":"s06","condition":"maintenance-interstitial","attempt":1,"max":2}
+{"at":"2026-08-13T22:12:09.517Z","runId":"4eef54d3","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T22:12:09.575Z","runId":"4eef54d3","type":"recovery.succeeded","stepId":"s06","condition":"maintenance-interstitial","attempt":1}
+{"at":"2026-08-13T22:12:09.576Z","runId":"4eef54d3","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T22:12:09.578Z","runId":"4eef54d3","type":"action.failed","stepId":"s06","error":"could not uniquely resolve target in frame [content]; tried role-name=0 match(es), role-name=0 match(es), structural=0 match(es)"}
+{"at":"2026-08-13T22:12:09.582Z","runId":"4eef54d3","type":"step.end","stepId":"s06","status":"recovered","durationMs":140}
+{"at":"2026-08-13T22:12:09.582Z","runId":"4eef54d3","type":"step.start","stepId":"s07","intent":"Read the S1 savings current balance from the Share Accounts panel","risk":"safe"}
+{"at":"2026-08-13T22:12:09.582Z","runId":"4eef54d3","type":"policy.check","action":"extract","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T22:12:09.590Z","runId":"4eef54d3","type":"output.captured","name":"savingsBalance","value":"******55"}
+{"at":"2026-08-13T22:12:09.590Z","runId":"4eef54d3","type":"step.end","stepId":"s07","status":"ok","durationMs":8}
+{"at":"2026-08-13T22:12:09.594Z","runId":"4eef54d3","type":"replay.success","outputs":{"savingsBalance":"4,182.55"}}

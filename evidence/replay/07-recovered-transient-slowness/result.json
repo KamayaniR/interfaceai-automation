@@ -1,0 +1,83 @@
+{
+  "capabilityId": "member.read-savings-balance",
+  "capabilityVersion": 1,
+  "runId": "c9aac789",
+  "startedAt": "2026-08-13T22:12:10.245Z",
+  "durationMs": 6609,
+  "trace": [
+    {
+      "stepId": "s01",
+      "intent": "Open the CoreVue back-office entry point",
+      "action": "navigate",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:10.400Z",
+      "durationMs": 26,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s02",
+      "intent": "Enter the operator ID into the sign-on form",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:10.426Z",
+      "durationMs": 29,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s03",
+      "intent": "Enter the operator password into the sign-on form",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:10.455Z",
+      "durationMs": 44,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s04",
+      "intent": "Submit the sign-on form",
+      "action": "click",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:10.499Z",
+      "durationMs": 98,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s05",
+      "intent": "Type the member number into the lookup field",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:10.597Z",
+      "durationMs": 11,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s06",
+      "intent": "Submit the member lookup",
+      "action": "click",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:10.608Z",
+      "durationMs": 6219,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s07",
+      "intent": "Read the S1 savings current balance from the Share Accounts panel",
+      "action": "extract",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:16.828Z",
+      "durationMs": 18,
+      "recoveryAttempts": 0
+    }
+  ],
+  "drift": [],
+  "evidence": {
+    "runId": "c9aac789",
+    "logPath": "runs/replay-c9aac789/run.jsonl",
+    "screenshots": [],
+    "domSnapshots": []
+  },
+  "status": "success",
+  "outputs": {
+    "savingsBalance": "4,182.55"
+  }
+}

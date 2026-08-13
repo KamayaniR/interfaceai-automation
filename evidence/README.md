@@ -3,9 +3,16 @@
 Every run in here is real output from `npm run replay` against the live target app.
 Regenerate the whole set with `./scripts/capture-evidence.sh` (target app must be running).
 
-Each directory contains `console.txt` (the caller-facing result), `run.jsonl` (the
-structured log of what the system did and why), and screenshots / DOM snapshots where a
-run captured them.
+Each directory contains:
+
+- **`result.json`** — the result contract exactly as a calling agent receives it. This is
+  the authoritative record; `jq -r .status result.json` beats reading console text.
+- `console.txt` — the same result rendered for a human
+- `run.jsonl` — the structured log of what the system did and why
+- screenshots / DOM snapshots where a run captured them
+
+`npm run verify` asserts that every folder's name matches the `status` in its
+`result.json`, so the evidence cannot drift from what it claims.
 
 ## Replay runs
 

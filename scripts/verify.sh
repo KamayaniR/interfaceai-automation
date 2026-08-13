@@ -97,6 +97,23 @@ else
 fi
 
 echo
+echo "── evidence integrity ──────────────────────────────────────"
+MISMATCH=0
+for d in evidence/replay/*/; do
+  n=$(basename "$d"); r="$d/result.json"
+  [ -f "$r" ] || { MISMATCH=1; echo "     missing result.json: $n"; continue; }
+  st=$(python3 -c "import json;print(json.load(open('$r'))['status'])" 2>/dev/null)
+  case "$n" in
+    *business-outcome*) want=business_outcome ;;
+    *failure*)          want=failure ;;
+    *)                  want=success ;;
+  esac
+  [ "$st" = "$want" ] || { MISMATCH=1; echo "     $n claims $want but result.json says $st"; }
+done
+[ "$MISMATCH" = "0" ] && ok "every evidence folder's name matches its recorded status" \
+                      || bad "evidence folder names match status" "consistent" "see above"
+
+echo
 echo "────────────────────────────────────────────────────────────"
 printf '  %d passed, %d failed\n\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

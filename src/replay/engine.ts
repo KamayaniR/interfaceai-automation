@@ -22,6 +22,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
+import { writeFileSync } from 'node:fs';
 
 import type {
   CapabilityArtifact,
@@ -579,7 +580,7 @@ export class ReplayEngine {
   }
 
   private build(partial: Record<string, unknown>): ReplayResult {
-    return {
+    const result = {
       capabilityId: this.opts.artifact.capability.id,
       capabilityVersion: this.opts.artifact.capability.version,
       runId: this.runId,
@@ -595,5 +596,11 @@ export class ReplayEngine {
       },
       ...partial,
     } as ReplayResult;
+
+    // Persist the result contract itself, not just a rendering of it. The console output
+    // is for a human watching; this is what a calling agent receives and what an auditor
+    // reads six months later, so it belongs in the evidence alongside the log.
+    writeFileSync(join(this.logger.runDir, 'result.json'), JSON.stringify(result, null, 2));
+    return result;
   }
 }

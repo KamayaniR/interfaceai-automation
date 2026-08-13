@@ -1,0 +1,77 @@
+{
+  "capabilityId": "member.read-savings-balance",
+  "capabilityVersion": 1,
+  "runId": "73a95541",
+  "startedAt": "2026-08-13T22:12:04.398Z",
+  "durationMs": 457,
+  "trace": [
+    {
+      "stepId": "s01",
+      "intent": "Open the CoreVue back-office entry point",
+      "action": "navigate",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:04.574Z",
+      "durationMs": 33,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s02",
+      "intent": "Enter the operator ID into the sign-on form",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:04.607Z",
+      "durationMs": 31,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s03",
+      "intent": "Enter the operator password into the sign-on form",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:04.638Z",
+      "durationMs": 44,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s04",
+      "intent": "Submit the sign-on form",
+      "action": "click",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:04.682Z",
+      "durationMs": 100,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s05",
+      "intent": "Type the member number into the lookup field",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:04.782Z",
+      "durationMs": 12,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s06",
+      "intent": "Submit the member lookup",
+      "action": "click",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:04.794Z",
+      "durationMs": 61,
+      "recoveryAttempts": 0,
+      "conditionFired": "member-not-found"
+    }
+  ],
+  "drift": [],
+  "evidence": {
+    "runId": "73a95541",
+    "logPath": "runs/replay-73a95541/run.jsonl",
+    "screenshots": [],
+    "domSnapshots": []
+  },
+  "status": "business_outcome",
+  "outcome": {
+    "code": "MEMBER_NOT_FOUND",
+    "message": "No member record exists with that member number. This is a legitimate answer, not a failure."
+  },
+  "outputs": {}
+}

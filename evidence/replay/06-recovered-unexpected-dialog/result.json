@@ -1,0 +1,85 @@
+{
+  "capabilityId": "member.read-savings-balance",
+  "capabilityVersion": 1,
+  "runId": "4eef54d3",
+  "startedAt": "2026-08-13T22:12:09.081Z",
+  "durationMs": 513,
+  "trace": [
+    {
+      "stepId": "s01",
+      "intent": "Open the CoreVue back-office entry point",
+      "action": "navigate",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:09.239Z",
+      "durationMs": 27,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s02",
+      "intent": "Enter the operator ID into the sign-on form",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:09.266Z",
+      "durationMs": 29,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s03",
+      "intent": "Enter the operator password into the sign-on form",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:09.295Z",
+      "durationMs": 38,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s04",
+      "intent": "Submit the sign-on form",
+      "action": "click",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:09.334Z",
+      "durationMs": 95,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s05",
+      "intent": "Type the member number into the lookup field",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:09.429Z",
+      "durationMs": 13,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s06",
+      "intent": "Submit the member lookup",
+      "action": "click",
+      "status": "recovered",
+      "startedAt": "2026-08-13T22:12:09.442Z",
+      "durationMs": 140,
+      "recoveryAttempts": 1,
+      "conditionFired": "maintenance-interstitial",
+      "error": "could not uniquely resolve target in frame [content]; tried role-name=0 match(es), role-name=0 match(es), structural=0 match(es)"
+    },
+    {
+      "stepId": "s07",
+      "intent": "Read the S1 savings current balance from the Share Accounts panel",
+      "action": "extract",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:09.582Z",
+      "durationMs": 8,
+      "recoveryAttempts": 0
+    }
+  ],
+  "drift": [],
+  "evidence": {
+    "runId": "4eef54d3",
+    "logPath": "runs/replay-4eef54d3/run.jsonl",
+    "screenshots": [],
+    "domSnapshots": []
+  },
+  "status": "success",
+  "outputs": {
+    "savingsBalance": "4,182.55"
+  }
+}

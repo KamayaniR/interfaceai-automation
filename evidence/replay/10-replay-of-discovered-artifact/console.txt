@@ -10,7 +10,7 @@ OUTPUTS  {
            "memberName": "OKONKWO, DANIEL"
          }
 
-TRACE    8 step(s), 885ms
+TRACE    8 step(s), 850ms
          ok        s01  Open the corevue entry point
          ok        s02  Enter the operator ID to sign on to the console
          ok        s03  Enter the operator password to sign on
@@ -20,6 +20,6 @@ TRACE    8 step(s), 885ms
          ok        s07  Capture the member's current savings (S1) balance, which is what was asked for
          ok        s08  Capture the member name so the caller can confirm the right record was read
 
-EVIDENCE runs/replay-87623158/run.jsonl
+EVIDENCE runs/replay-3a6da734/run.jsonl
 ────────────────────────────────────────────────────────────────
 

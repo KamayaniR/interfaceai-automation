@@ -4,7 +4,7 @@ Replaying member.open-subaccount v1 (approved)
 
 
   [escalation] step is classified "irreversible" and the replay profile requires "confirm" for that class
-  [escalation] request 04e79f2c — open the operator console to take control
+  [escalation] request 8f599e3a — open the operator console to take control
 
 
 ────────────────────────────────────────────────────────────────
@@ -14,9 +14,9 @@ OUTPUTS  {
          }
 
 HUMAN    1 intervention(s):
-         · s09: operator local-operator, 3 action(s) recorded, 3007ms
+         · s09: operator local-operator, 3 action(s) recorded, 2006ms
 
-TRACE    10 step(s), 6725ms
+TRACE    10 step(s), 5424ms
          ok        s01  Open the CoreVue back-office entry point
          ok        s02  Enter the operator ID into the sign-on form
          ok        s03  Enter the operator password into the sign-on form
@@ -28,6 +28,6 @@ TRACE    10 step(s), 6725ms
          ok        s09  Create the sub-account — IRREVERSIBLE: this opens a real account on the member's record
          ok        s10  Read the new account number from the confirmation screen
 
-EVIDENCE runs/replay-3747f5af/run.jsonl
+EVIDENCE runs/replay-8b07b7cb/run.jsonl
 ────────────────────────────────────────────────────────────────
 

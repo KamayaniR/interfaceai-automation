@@ -1,0 +1,77 @@
+{
+  "capabilityId": "member.read-savings-balance",
+  "capabilityVersion": 1,
+  "runId": "371b9677",
+  "startedAt": "2026-08-13T22:12:05.533Z",
+  "durationMs": 479,
+  "trace": [
+    {
+      "stepId": "s01",
+      "intent": "Open the CoreVue back-office entry point",
+      "action": "navigate",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:05.731Z",
+      "durationMs": 44,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s02",
+      "intent": "Enter the operator ID into the sign-on form",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:05.775Z",
+      "durationMs": 29,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s03",
+      "intent": "Enter the operator password into the sign-on form",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:05.804Z",
+      "durationMs": 43,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s04",
+      "intent": "Submit the sign-on form",
+      "action": "click",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:05.847Z",
+      "durationMs": 77,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s05",
+      "intent": "Type the member number into the lookup field",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:05.924Z",
+      "durationMs": 11,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s06",
+      "intent": "Submit the member lookup",
+      "action": "click",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:05.936Z",
+      "durationMs": 76,
+      "recoveryAttempts": 0,
+      "conditionFired": "access-denied"
+    }
+  ],
+  "drift": [],
+  "evidence": {
+    "runId": "371b9677",
+    "logPath": "runs/replay-371b9677/run.jsonl",
+    "screenshots": [],
+    "domSnapshots": []
+  },
+  "status": "business_outcome",
+  "outcome": {
+    "code": "ACCESS_DENIED",
+    "message": "The operator's role is not authorised to view this member record."
+  },
+  "outputs": {}
+}

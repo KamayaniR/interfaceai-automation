@@ -1,0 +1,118 @@
+{
+  "capabilityId": "member.open-subaccount",
+  "capabilityVersion": 1,
+  "runId": "8b07b7cb",
+  "startedAt": "2026-08-13T22:12:37.549Z",
+  "durationMs": 5424,
+  "trace": [
+    {
+      "stepId": "s01",
+      "intent": "Open the CoreVue back-office entry point",
+      "action": "navigate",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:39.975Z",
+      "durationMs": 216,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s02",
+      "intent": "Enter the operator ID into the sign-on form",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:40.192Z",
+      "durationMs": 62,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s03",
+      "intent": "Enter the operator password into the sign-on form",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:40.254Z",
+      "durationMs": 85,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s04",
+      "intent": "Submit the sign-on form",
+      "action": "click",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:40.339Z",
+      "durationMs": 144,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s05",
+      "intent": "Type the member number into the lookup field",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:40.483Z",
+      "durationMs": 15,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s06",
+      "intent": "Submit the member lookup",
+      "action": "click",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:40.498Z",
+      "durationMs": 148,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s07",
+      "intent": "Follow the link to open a new sub-account for this member",
+      "action": "click",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:40.646Z",
+      "durationMs": 90,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s08",
+      "intent": "Choose the requested share account type",
+      "action": "select",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:40.736Z",
+      "durationMs": 15,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s09",
+      "intent": "Create the sub-account — IRREVERSIBLE: this opens a real account on the member's record",
+      "action": "click",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:40.752Z",
+      "durationMs": 2209,
+      "recoveryAttempts": 0,
+      "humanIntervention": {
+        "requestId": "8f599e3a",
+        "operator": "local-operator",
+        "actionsRecorded": 3,
+        "durationMs": 2006
+      }
+    },
+    {
+      "stepId": "s10",
+      "intent": "Read the new account number from the confirmation screen",
+      "action": "extract",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:42.961Z",
+      "durationMs": 9,
+      "recoveryAttempts": 0
+    }
+  ],
+  "drift": [],
+  "evidence": {
+    "runId": "8b07b7cb",
+    "logPath": "runs/replay-8b07b7cb/run.jsonl",
+    "screenshots": [
+      "runs/replay-8b07b7cb/escalation-s09.png"
+    ],
+    "domSnapshots": []
+  },
+  "status": "success",
+  "outputs": {
+    "newAccountNumber": "100442-S3"
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "capabilityId": "member.read-savings-balance",
+  "capabilityVersion": 1,
+  "runId": "c6a49d1f",
+  "startedAt": "2026-08-13T22:12:06.715Z",
+  "durationMs": 425,
+  "trace": [
+    {
+      "stepId": "s01",
+      "intent": "Open the CoreVue back-office entry point",
+      "action": "navigate",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:06.878Z",
+      "durationMs": 29,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s02",
+      "intent": "Enter the operator ID into the sign-on form",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:06.907Z",
+      "durationMs": 29,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s03",
+      "intent": "Enter the operator password into the sign-on form",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:06.936Z",
+      "durationMs": 41,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s04",
+      "intent": "Submit the sign-on form",
+      "action": "click",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:06.977Z",
+      "durationMs": 85,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s05",
+      "intent": "Type the member number into the lookup field",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:07.063Z",
+      "durationMs": 11,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s06",
+      "intent": "Submit the member lookup",
+      "action": "click",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:07.075Z",
+      "durationMs": 65,
+      "recoveryAttempts": 0,
+      "conditionFired": "member-number-invalid"
+    }
+  ],
+  "drift": [],
+  "evidence": {
+    "runId": "c6a49d1f",
+    "logPath": "runs/replay-c6a49d1f/run.jsonl",
+    "screenshots": [],
+    "domSnapshots": []
+  },
+  "status": "business_outcome",
+  "outcome": {
+    "code": "MEMBER_NUMBER_INVALID",
+    "message": "The member number was rejected by the application's own validation."
+  },
+  "outputs": {}
+}

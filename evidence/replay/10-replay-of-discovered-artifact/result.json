@@ -1,0 +1,94 @@
+{
+  "capabilityId": "member.read-savings-balance",
+  "capabilityVersion": 2,
+  "runId": "3a6da734",
+  "startedAt": "2026-08-13T22:12:32.954Z",
+  "durationMs": 850,
+  "trace": [
+    {
+      "stepId": "s01",
+      "intent": "Open the corevue entry point",
+      "action": "navigate",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:33.462Z",
+      "durationMs": 69,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s02",
+      "intent": "Enter the operator ID to sign on to the console",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:33.531Z",
+      "durationMs": 5,
+      "recoveryAttempts": 0,
+      "error": "frame [frame] not found on the page"
+    },
+    {
+      "stepId": "s03",
+      "intent": "Enter the operator password to sign on",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:33.536Z",
+      "durationMs": 92,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s04",
+      "intent": "Submit the sign-on form to reach the console",
+      "action": "click",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:33.628Z",
+      "durationMs": 86,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s05",
+      "intent": "Enter the member number to look up",
+      "action": "type",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:33.715Z",
+      "durationMs": 15,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s06",
+      "intent": "Search for the member record",
+      "action": "click",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:33.730Z",
+      "durationMs": 59,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s07",
+      "intent": "Capture the member's current savings (S1) balance, which is what was asked for",
+      "action": "extract",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:33.789Z",
+      "durationMs": 9,
+      "recoveryAttempts": 0
+    },
+    {
+      "stepId": "s08",
+      "intent": "Capture the member name so the caller can confirm the right record was read",
+      "action": "extract",
+      "status": "ok",
+      "startedAt": "2026-08-13T22:12:33.798Z",
+      "durationMs": 3,
+      "recoveryAttempts": 0
+    }
+  ],
+  "drift": [],
+  "evidence": {
+    "runId": "3a6da734",
+    "logPath": "runs/replay-3a6da734/run.jsonl",
+    "screenshots": [],
+    "domSnapshots": []
+  },
+  "status": "success",
+  "outputs": {
+    "savingsBalance": "17,420.00",
+    "memberName": "OKONKWO, DANIEL"
+  }
+}

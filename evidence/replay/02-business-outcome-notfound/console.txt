@@ -8,7 +8,7 @@ STATUS   business_outcome     <- a legitimate answer, not a failure
 OUTCOME  MEMBER_NOT_FOUND
          No member record exists with that member number. This is a legitimate answer, not a failure.
 
-TRACE    6 step(s), 434ms
+TRACE    6 step(s), 457ms
          ok        s01  Open the CoreVue back-office entry point
          ok        s02  Enter the operator ID into the sign-on form
          ok        s03  Enter the operator password into the sign-on form
@@ -16,6 +16,6 @@ TRACE    6 step(s), 434ms
          ok        s05  Type the member number into the lookup field
          ok        s06  Submit the member lookup  [condition: member-not-found]
 
-EVIDENCE runs/replay-b3869a34/run.jsonl
+EVIDENCE runs/replay-73a95541/run.jsonl
 ────────────────────────────────────────────────────────────────
 

@@ -1,29 +1,29 @@
-{"at":"2026-08-13T21:30:12.147Z","runId":"87623158","type":"replay.start","capability":"member.read-savings-balance","version":2,"status":"draft","inputs":{"memberNumber":"****43","operatorId":"[REDACTED]","operatorPassword":"[REDACTED]"}}
-{"at":"2026-08-13T21:30:12.642Z","runId":"87623158","type":"step.start","stepId":"s01","intent":"Open the corevue entry point","risk":"safe"}
-{"at":"2026-08-13T21:30:12.643Z","runId":"87623158","type":"policy.check","action":"navigate","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T21:30:12.715Z","runId":"87623158","type":"step.end","stepId":"s01","status":"ok","durationMs":73}
-{"at":"2026-08-13T21:30:12.715Z","runId":"87623158","type":"step.start","stepId":"s02","intent":"Enter the operator ID to sign on to the console","risk":"safe"}
-{"at":"2026-08-13T21:30:12.715Z","runId":"87623158","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T21:30:12.716Z","runId":"87623158","type":"action.failed","stepId":"s02","error":"frame [frame] not found on the page"}
-{"at":"2026-08-13T21:30:12.719Z","runId":"87623158","type":"step.end","stepId":"s02","status":"ok","durationMs":4}
-{"at":"2026-08-13T21:30:12.719Z","runId":"87623158","type":"step.start","stepId":"s03","intent":"Enter the operator password to sign on","risk":"safe"}
-{"at":"2026-08-13T21:30:12.720Z","runId":"87623158","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T21:30:12.846Z","runId":"87623158","type":"step.end","stepId":"s03","status":"ok","durationMs":127}
-{"at":"2026-08-13T21:30:12.846Z","runId":"87623158","type":"step.start","stepId":"s04","intent":"Submit the sign-on form to reach the console","risk":"safe"}
-{"at":"2026-08-13T21:30:12.846Z","runId":"87623158","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T21:30:12.934Z","runId":"87623158","type":"step.end","stepId":"s04","status":"ok","durationMs":88}
-{"at":"2026-08-13T21:30:12.934Z","runId":"87623158","type":"step.start","stepId":"s05","intent":"Enter the member number to look up","risk":"safe"}
-{"at":"2026-08-13T21:30:12.934Z","runId":"87623158","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T21:30:12.949Z","runId":"87623158","type":"step.end","stepId":"s05","status":"ok","durationMs":15}
-{"at":"2026-08-13T21:30:12.949Z","runId":"87623158","type":"step.start","stepId":"s06","intent":"Search for the member record","risk":"safe"}
-{"at":"2026-08-13T21:30:12.949Z","runId":"87623158","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T21:30:13.009Z","runId":"87623158","type":"step.end","stepId":"s06","status":"ok","durationMs":60}
-{"at":"2026-08-13T21:30:13.010Z","runId":"87623158","type":"step.start","stepId":"s07","intent":"Capture the member's current savings (S1) balance, which is what was asked for","risk":"safe"}
-{"at":"2026-08-13T21:30:13.010Z","runId":"87623158","type":"policy.check","action":"extract","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T21:30:13.018Z","runId":"87623158","type":"output.captured","name":"savingsBalance","value":"*******00"}
-{"at":"2026-08-13T21:30:13.018Z","runId":"87623158","type":"step.end","stepId":"s07","status":"ok","durationMs":8}
-{"at":"2026-08-13T21:30:13.019Z","runId":"87623158","type":"step.start","stepId":"s08","intent":"Capture the member name so the caller can confirm the right record was read","risk":"safe"}
-{"at":"2026-08-13T21:30:13.019Z","runId":"87623158","type":"policy.check","action":"extract","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T21:30:13.020Z","runId":"87623158","type":"output.captured","name":"memberName","value":"*************EL"}
-{"at":"2026-08-13T21:30:13.020Z","runId":"87623158","type":"step.end","stepId":"s08","status":"ok","durationMs":1}
-{"at":"2026-08-13T21:30:13.024Z","runId":"87623158","type":"replay.success","outputs":{"savingsBalance":"17,420.00","memberName":"OKONKWO, DANIEL"}}
+{"at":"2026-08-13T22:12:32.963Z","runId":"3a6da734","type":"replay.start","capability":"member.read-savings-balance","version":2,"status":"draft","inputs":{"memberNumber":"****43","operatorId":"[REDACTED]","operatorPassword":"[REDACTED]"}}
+{"at":"2026-08-13T22:12:33.462Z","runId":"3a6da734","type":"step.start","stepId":"s01","intent":"Open the corevue entry point","risk":"safe"}
+{"at":"2026-08-13T22:12:33.462Z","runId":"3a6da734","type":"policy.check","action":"navigate","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T22:12:33.531Z","runId":"3a6da734","type":"step.end","stepId":"s01","status":"ok","durationMs":69}
+{"at":"2026-08-13T22:12:33.531Z","runId":"3a6da734","type":"step.start","stepId":"s02","intent":"Enter the operator ID to sign on to the console","risk":"safe"}
+{"at":"2026-08-13T22:12:33.531Z","runId":"3a6da734","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T22:12:33.532Z","runId":"3a6da734","type":"action.failed","stepId":"s02","error":"frame [frame] not found on the page"}
+{"at":"2026-08-13T22:12:33.536Z","runId":"3a6da734","type":"step.end","stepId":"s02","status":"ok","durationMs":5}
+{"at":"2026-08-13T22:12:33.536Z","runId":"3a6da734","type":"step.start","stepId":"s03","intent":"Enter the operator password to sign on","risk":"safe"}
+{"at":"2026-08-13T22:12:33.536Z","runId":"3a6da734","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T22:12:33.628Z","runId":"3a6da734","type":"step.end","stepId":"s03","status":"ok","durationMs":92}
+{"at":"2026-08-13T22:12:33.628Z","runId":"3a6da734","type":"step.start","stepId":"s04","intent":"Submit the sign-on form to reach the console","risk":"safe"}
+{"at":"2026-08-13T22:12:33.628Z","runId":"3a6da734","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T22:12:33.714Z","runId":"3a6da734","type":"step.end","stepId":"s04","status":"ok","durationMs":86}
+{"at":"2026-08-13T22:12:33.715Z","runId":"3a6da734","type":"step.start","stepId":"s05","intent":"Enter the member number to look up","risk":"safe"}
+{"at":"2026-08-13T22:12:33.715Z","runId":"3a6da734","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T22:12:33.730Z","runId":"3a6da734","type":"step.end","stepId":"s05","status":"ok","durationMs":15}
+{"at":"2026-08-13T22:12:33.730Z","runId":"3a6da734","type":"step.start","stepId":"s06","intent":"Search for the member record","risk":"safe"}
+{"at":"2026-08-13T22:12:33.730Z","runId":"3a6da734","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T22:12:33.789Z","runId":"3a6da734","type":"step.end","stepId":"s06","status":"ok","durationMs":59}
+{"at":"2026-08-13T22:12:33.789Z","runId":"3a6da734","type":"step.start","stepId":"s07","intent":"Capture the member's current savings (S1) balance, which is what was asked for","risk":"safe"}
+{"at":"2026-08-13T22:12:33.790Z","runId":"3a6da734","type":"policy.check","action":"extract","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T22:12:33.798Z","runId":"3a6da734","type":"output.captured","name":"savingsBalance","value":"*******00"}
+{"at":"2026-08-13T22:12:33.798Z","runId":"3a6da734","type":"step.end","stepId":"s07","status":"ok","durationMs":9}
+{"at":"2026-08-13T22:12:33.798Z","runId":"3a6da734","type":"step.start","stepId":"s08","intent":"Capture the member name so the caller can confirm the right record was read","risk":"safe"}
+{"at":"2026-08-13T22:12:33.798Z","runId":"3a6da734","type":"policy.check","action":"extract","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T22:12:33.800Z","runId":"3a6da734","type":"output.captured","name":"memberName","value":"*************EL"}
+{"at":"2026-08-13T22:12:33.801Z","runId":"3a6da734","type":"step.end","stepId":"s08","status":"ok","durationMs":3}
+{"at":"2026-08-13T22:12:33.804Z","runId":"3a6da734","type":"replay.success","outputs":{"savingsBalance":"17,420.00","memberName":"OKONKWO, DANIEL"}}

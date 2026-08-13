@@ -1,0 +1,23 @@
+{
+  "capabilityId": "member.read-savings-balance",
+  "capabilityVersion": 1,
+  "runId": "93ba225f",
+  "startedAt": "2026-08-13T22:12:17.596Z",
+  "durationMs": 7,
+  "trace": [],
+  "drift": [],
+  "evidence": {
+    "runId": "93ba225f",
+    "logPath": "runs/replay-93ba225f/run.jsonl",
+    "screenshots": [],
+    "domSnapshots": []
+  },
+  "status": "failure",
+  "failure": {
+    "class": "contract_violation",
+    "stepId": null,
+    "message": "input \"memberId\" does not satisfy its declared pattern",
+    "expected": "/^\\d{6}$/",
+    "observed": "a 19-character value that did not match"
+  }
+}
