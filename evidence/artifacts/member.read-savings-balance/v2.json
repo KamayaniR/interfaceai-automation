@@ -1,0 +1,421 @@
+{
+  "schemaVersion": "1.0",
+  "capability": {
+    "id": "member.read-savings-balance",
+    "version": 2,
+    "name": "Read member savings balance",
+    "description": "Signs on to the CoreVue 7.2 back-office console, looks up a member by member number via Member Lookup, and returns the current balance of their Savings (S1) share account along with the member name shown on the Member Detail screen. Read-only: no records are modified. Note: the behaviour for a non-existent member number was deliberately not exercised during recording (probing it would have polluted the replayable flow), so no MEMBER_NOT_FOUND outcome text is declared yet.",
+    "status": "draft"
+  },
+  "app": {
+    "appId": "corevue",
+    "vendor": "meridian-systems",
+    "variantOf": null,
+    "tenantId": null,
+    "entryUrl": "http://localhost:3100"
+  },
+  "inputs": {
+    "operatorId": {
+      "type": "string",
+      "description": "Operator ID used to sign on to the CoreVue console.",
+      "required": true,
+      "sensitivity": "secret"
+    },
+    "operatorPassword": {
+      "type": "string",
+      "description": "Password for the operator sign-on.",
+      "required": true,
+      "sensitivity": "secret"
+    },
+    "memberNumber": {
+      "type": "string",
+      "description": "The credit union member number to look up.",
+      "required": true,
+      "pattern": "^\\d{6}$",
+      "sensitivity": "pii"
+    }
+  },
+  "outputs": {
+    "savingsBalance": {
+      "type": "money",
+      "description": "Current balance of the member's Savings (S1) share account, without currency symbol (e.g. 4,182.55).",
+      "sensitivity": "pii"
+    },
+    "memberName": {
+      "type": "string",
+      "description": "Member name as shown on the Member Detail screen, in LAST, FIRST M format.",
+      "sensitivity": "pii"
+    }
+  },
+  "outcomes": [],
+  "preconditions": [],
+  "steps": [
+    {
+      "id": "s01",
+      "intent": "Open the corevue entry point",
+      "action": {
+        "kind": "navigate",
+        "url": "http://localhost:3100"
+      },
+      "risk": "safe",
+      "waitFor": {
+        "kind": "url-matches",
+        "pattern": "/",
+        "timeoutMs": 10000,
+        "description": "the browser reaches / after \"Open the corevue entry point\""
+      },
+      "onCondition": []
+    },
+    {
+      "id": "s02",
+      "intent": "Enter the operator ID to sign on to the console",
+      "action": {
+        "kind": "type",
+        "value": "{{operatorId}}",
+        "clearFirst": true
+      },
+      "target": {
+        "framePath": [
+          "frame"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "textbox",
+            "name": "Operator ID",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "label-proximity",
+            "labelText": "Operator ID",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "role-name",
+            "role": "textbox",
+            "name": "Operator ID",
+            "nameIsSubstring": true
+          },
+          {
+            "by": "structural",
+            "formIndex": -1,
+            "controlIndex": 0
+          }
+        ],
+        "fingerprint": {
+          "tagName": "input",
+          "inputType": "text",
+          "attrs": {
+            "name": "f_01",
+            "type": "text"
+          }
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "kind": "url-matches",
+        "pattern": "/",
+        "timeoutMs": 10000,
+        "description": "the browser reaches / after \"Enter the operator ID to sign on to the console\""
+      },
+      "onCondition": []
+    },
+    {
+      "id": "s03",
+      "intent": "Enter the operator password to sign on",
+      "action": {
+        "kind": "type",
+        "value": "{{operatorPassword}}",
+        "clearFirst": true
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "textbox",
+            "name": "Password",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "label-proximity",
+            "labelText": "Password",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "role-name",
+            "role": "textbox",
+            "name": "Password",
+            "nameIsSubstring": true
+          },
+          {
+            "by": "structural",
+            "formIndex": -1,
+            "controlIndex": 1
+          }
+        ],
+        "fingerprint": {
+          "tagName": "input",
+          "inputType": "password",
+          "attrs": {
+            "name": "f_02",
+            "type": "password"
+          }
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "kind": "url-matches",
+        "pattern": "/",
+        "timeoutMs": 10000,
+        "description": "the browser reaches / after \"Enter the operator password to sign on\""
+      },
+      "onCondition": []
+    },
+    {
+      "id": "s04",
+      "intent": "Submit the sign-on form to reach the console",
+      "action": {
+        "kind": "click"
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "button",
+            "name": "Sign On",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "label-proximity",
+            "labelText": "Operator Sign On",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "role-name",
+            "role": "button",
+            "name": "Sign On",
+            "nameIsSubstring": true
+          },
+          {
+            "by": "structural",
+            "formIndex": 0,
+            "controlIndex": 0
+          }
+        ],
+        "fingerprint": {
+          "tagName": "input",
+          "inputType": "submit",
+          "attrs": {
+            "type": "submit"
+          }
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "kind": "url-matches",
+        "pattern": "/",
+        "timeoutMs": 10000,
+        "description": "the browser reaches / after \"Submit the sign-on form to reach the console\""
+      },
+      "onCondition": []
+    },
+    {
+      "id": "s05",
+      "intent": "Enter the member number to look up",
+      "action": {
+        "kind": "type",
+        "value": "{{memberNumber}}",
+        "clearFirst": true
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "textbox",
+            "name": "Member Number",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "label-proximity",
+            "labelText": "Member Number",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "role-name",
+            "role": "textbox",
+            "name": "Member Number",
+            "nameIsSubstring": true
+          },
+          {
+            "by": "structural",
+            "formIndex": 0,
+            "controlIndex": 0
+          }
+        ],
+        "fingerprint": {
+          "tagName": "input",
+          "inputType": "text",
+          "attrs": {
+            "name": "f_mbr",
+            "type": "text"
+          }
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "kind": "url-matches",
+        "pattern": "/",
+        "timeoutMs": 10000,
+        "description": "the browser reaches / after \"Enter the member number to look up\""
+      },
+      "onCondition": []
+    },
+    {
+      "id": "s06",
+      "intent": "Search for the member record",
+      "action": {
+        "kind": "click"
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "button",
+            "name": "Search",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "label-proximity",
+            "labelText": "Member Lookup",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "role-name",
+            "role": "button",
+            "name": "Search",
+            "nameIsSubstring": true
+          },
+          {
+            "by": "structural",
+            "formIndex": 0,
+            "controlIndex": 1
+          }
+        ],
+        "fingerprint": {
+          "tagName": "input",
+          "inputType": "submit",
+          "attrs": {
+            "type": "submit"
+          }
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "kind": "url-matches",
+        "pattern": "/",
+        "timeoutMs": 10000,
+        "description": "the browser reaches / after \"Search for the member record\""
+      },
+      "onCondition": []
+    },
+    {
+      "id": "s07",
+      "intent": "Capture the member's current savings (S1) balance, which is what was asked for",
+      "action": {
+        "kind": "extract",
+        "outputName": "savingsBalance",
+        "from": "text",
+        "pattern": "\\$([\\d,\\.]+)"
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "label-proximity",
+            "labelText": "Savings (S1) Current Balance",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "anchor-relative",
+            "anchorText": "Savings (S1) Current Balance",
+            "role": "text",
+            "offset": 0
+          }
+        ],
+        "fingerprint": {
+          "tagName": "td",
+          "attrs": {}
+        }
+      },
+      "risk": "safe",
+      "onCondition": []
+    },
+    {
+      "id": "s08",
+      "intent": "Capture the member name so the caller can confirm the right record was read",
+      "action": {
+        "kind": "extract",
+        "outputName": "memberName",
+        "from": "text"
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "label-proximity",
+            "labelText": "Name",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "anchor-relative",
+            "anchorText": "Name",
+            "role": "text",
+            "offset": 0
+          }
+        ],
+        "fingerprint": {
+          "tagName": "td",
+          "attrs": {}
+        }
+      },
+      "risk": "safe",
+      "onCondition": []
+    }
+  ],
+  "checkpoint": {
+    "kind": "text-present",
+    "text": "Savings (S1) Current Balance",
+    "framePath": [],
+    "timeoutMs": 15000,
+    "description": "\"Savings (S1) Current Balance\" is visible, proving the capability reached its goal"
+  },
+  "provenance": {
+    "model": "claude-opus-5",
+    "runId": "fd56baf1",
+    "discoveredAt": "2026-08-13T21:29:38.262Z",
+    "transcriptDigest": "d5f9edd4079eab7c"
+  }
+}

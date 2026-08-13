@@ -162,9 +162,12 @@ export const DISCOVERY_TOOLS: Anthropic.Tool[] = [
         outcomes: {
           type: 'array',
           description:
-            'Legitimate non-error answers this capability can return — e.g. the member number ' +
-            'does not exist. These are results the caller needs, NOT failures. Describe the ' +
-            'on-screen text that indicates each one.',
+            'Legitimate non-error answers this capability can return INSTEAD of its normal ' +
+            'result — e.g. the member number does not exist. These are results the caller ' +
+            'needs, NOT failures. Describe the on-screen text that indicates each one.\n\n' +
+            'Do NOT declare an outcome for the success case. Success is not an outcome — it ' +
+            'is the absence of one. An outcome whose text appears on the successful end ' +
+            'screen would stop replay before it could read the data you were asked for.',
           items: {
             type: 'object',
             properties: {
@@ -205,7 +208,9 @@ export const DISCOVERY_TOOLS: Anthropic.Tool[] = [
   },
 ];
 
-export const SYSTEM_PROMPT = `You are driving a legacy bank back-office web application to accomplish a task, so that the flow can be recorded once and replayed thousands of times without you.
+export const SYSTEM_PROMPT = `You are an automation engineer's agent, working inside a local development sandbox.
+
+The application you are driving is a mock back-office console running on localhost. It was written for this project to stand in for a real one: the member records are invented fixtures, the sign-on form accepts any credentials, and no real system, customer or money is reachable from it. Your job is to work out how a task is performed in this UI so the flow can be recorded once and replayed thousands of times without you.
 
 You perceive the screen through an accessibility index. Each line is:
 

@@ -34,6 +34,7 @@ import type {
 } from '../schema/artifact.ts';
 import type { ObservedElement } from '../surface/surface.ts';
 import { synthesiseTarget } from '../surface/web/resolve-target.ts';
+import { classifyRisk } from '../policy/risk.ts';
 
 /** One action that succeeded during discovery, with the element it touched. */
 export interface RecordedAction {
@@ -77,23 +78,6 @@ export interface RecordOptions {
   model: string;
   runId: string;
   transcript: string;
-}
-
-/**
- * Classify a step's risk from what it does. Conservative by construction: anything that
- * submits a form whose page talks about creating or transferring is treated as
- * irreversible, because the cost of under-classifying is unbounded and the cost of
- * over-classifying is one human confirmation.
- */
-function classifyRisk(action: RecordedAction): RiskClass {
-  if (action.kind === 'navigate' || action.kind === 'extract') return 'safe';
-
-  const label = `${action.element?.name ?? ''} ${action.intent}`.toLowerCase();
-  const IRREVERSIBLE = ['create', 'open account', 'transfer', 'submit payment', 'post ', 'delete', 'close account', 'disburse'];
-  if (IRREVERSIBLE.some((k) => label.includes(k))) return 'irreversible';
-
-  if (action.kind === 'type' || action.kind === 'select') return 'safe'; // filling a field commits nothing
-  return 'safe';
 }
 
 /** Swap literals the caller will vary for `{{param}}` placeholders. */
@@ -168,23 +152,45 @@ export function recordArtifact(opts: RecordOptions): CapabilityArtifact {
     outputs[o.name] = { type: o.type, description: o.description, sensitivity: o.sensitivity };
   }
 
-  const outcomes: BusinessOutcome[] = contract.outcomes.map((o) => ({
-    code: o.code,
-    description: o.description,
-    terminal: true,
-  }));
+  // Reject outcomes that fire on the SUCCESS screen.
+  //
+  // A business outcome is by definition an alternative to success, so one whose marker
+  // text is visible on the successful end state is self-defeating: replay would detect
+  // it, terminate cleanly, and never run the extracts. A real discovery run did exactly
+  // this — it declared BALANCE_FOUND as an outcome, and replay stopped one step before
+  // reading the balance. Prompting alone is not enough to prevent it; this is the check.
+  const successScreen = (actions.at(-1)?.resultingText ?? '') + ' ' + contract.success_text;
+  const rejected: string[] = [];
+  const outcomes: BusinessOutcome[] = contract.outcomes
+    .filter((o) => {
+      const firesOnSuccess =
+        successScreen.includes(o.detect_text) || contract.success_text.includes(o.detect_text);
+      if (firesOnSuccess) rejected.push(o.code);
+      return !firesOnSuccess;
+    })
+    .map((o) => ({ code: o.code, description: o.description, terminal: true }));
+
+  if (rejected.length) {
+    console.warn(
+      `  ! dropped ${rejected.length} declared outcome(s) that would fire on the success ` +
+        `screen and short-circuit replay: ${rejected.join(', ')}`,
+    );
+  }
 
   // Every declared business outcome becomes a condition rule on every step that could
   // plausibly surface it. Attaching them broadly is the right default: an app can show
   // "record not found" on whichever screen it likes, and a missed condition degrades
   // into a checkpoint timeout — the exact conflation we are trying to avoid.
-  const outcomeRules = contract.outcomes.map((o) => ({
-    when: {
-      id: o.code.toLowerCase().replace(/_/g, '-'),
-      anyOf: [{ kind: 'text-present' as const, text: o.detect_text }],
-    },
-    then: { then: 'business-outcome' as const, outcomeCode: o.code },
-  }));
+  const keptCodes = new Set(outcomes.map((o) => o.code));
+  const outcomeRules = contract.outcomes
+    .filter((o) => keptCodes.has(o.code))
+    .map((o) => ({
+      when: {
+        id: o.code.toLowerCase().replace(/_/g, '-'),
+        anyOf: [{ kind: 'text-present' as const, text: o.detect_text }],
+      },
+      then: { then: 'business-outcome' as const, outcomeCode: o.code },
+    }));
 
   const steps: StepType[] = actions.map((action, idx) => {
     const isLast = idx === actions.length - 1;
@@ -219,7 +225,7 @@ export function recordArtifact(opts: RecordOptions): CapabilityArtifact {
       intent: action.intent,
       action: built,
       target,
-      risk: classifyRisk(action),
+      risk: classifyRisk(`${action.element?.name ?? ''} ${action.intent}`, action.kind),
       waitFor: checkpointFor(action, isLast, contract.success_text),
       // Outcome rules go on every non-navigate step. Navigation to the entry point
       // cannot itself produce a business outcome.

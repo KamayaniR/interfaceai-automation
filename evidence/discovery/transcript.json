@@ -1,0 +1,324 @@
+[
+  {
+    "role": "user",
+    "content": "GOAL: Look up member 100442 and read their current savings balance\n\nURL: http://localhost:3100/\nTITLE: CoreVue 7.2\n\nCONTROLS:\n[1] link      \"Member Lookup\"  (frame: frame)\n[2] textbox   \"Operator ID\"  (frame: frame)\n[3] textbox   \"Password\"  (frame: frame)\n[4] button    \"Sign On\"  value=\"Sign On\"  (frame: frame)\n[5] text      \"Operator Sign On\"  value=\"Operator ID\"  (frame: frame)\n[6] text      \"Operator Sign On\"  value=\"Password\"  (frame: frame)\n\nVISIBLE TEXT:\n--- text (frame) ---\nMERIDIAN CU | CoreVue 7.2 Member Lookup\n--- text (frame) ---\nCoreVue 7.2 — Sign On Operator Sign On Operator ID Password"
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "I'll start by signing on with test credentials."
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_01Rq4iUB1YP278YQMHq3NYts",
+        "name": "type",
+        "input": {
+          "ref": 2,
+          "text": "operator1",
+          "intent": "Enter the operator ID to sign on to the console"
+        },
+        "caller": {
+          "type": "direct"
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "type": "tool_result",
+        "tool_use_id": "toolu_01Rq4iUB1YP278YQMHq3NYts",
+        "content": "RESULT: type succeeded\nURL: http://localhost:3100/\nTITLE: CoreVue 7.2\n\nCONTROLS:\n[1] link      \"Member Lookup\"  (frame: nav)\n[2] textbox   \"Operator ID\"  value=\"operator1\"  (frame: content)\n[3] textbox   \"Password\"  (frame: content)\n[4] button    \"Sign On\"  value=\"Sign On\"  (frame: content)\n[5] text      \"Operator Sign On\"  value=\"Operator ID\"  (frame: content)\n[6] text      \"Operator Sign On\"  value=\"Password\"  (frame: content)\n\nVISIBLE TEXT:\n--- text (nav) ---\nMERIDIAN CU | CoreVue 7.2 Member Lookup\n--- text (content) ---\nCoreVue 7.2 — Sign On Operator Sign On Operator ID Password"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_01JAAxtaB3tZtD3hTMtHCCRd",
+        "name": "type",
+        "input": {
+          "ref": 3,
+          "text": "test-password",
+          "intent": "Enter the operator password to sign on"
+        },
+        "caller": {
+          "type": "direct"
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "type": "tool_result",
+        "tool_use_id": "toolu_01JAAxtaB3tZtD3hTMtHCCRd",
+        "content": "RESULT: type succeeded\nURL: http://localhost:3100/\nTITLE: CoreVue 7.2\n\nCONTROLS:\n[1] link      \"Member Lookup\"  (frame: nav)\n[2] textbox   \"Operator ID\"  value=\"operator1\"  (frame: content)\n[3] textbox   \"Password\"  (frame: content)\n[4] button    \"Sign On\"  value=\"Sign On\"  (frame: content)\n[5] text      \"Operator Sign On\"  value=\"Operator ID\"  (frame: content)\n[6] text      \"Operator Sign On\"  value=\"Password\"  (frame: content)\n\nVISIBLE TEXT:\n--- text (nav) ---\nMERIDIAN CU | CoreVue 7.2 Member Lookup\n--- text (content) ---\nCoreVue 7.2 — Sign On Operator Sign On Operator ID Password"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_01DD14iV5QopW4KBuu2fdKFc",
+        "name": "click",
+        "input": {
+          "ref": 4,
+          "intent": "Submit the sign-on form to reach the console"
+        },
+        "caller": {
+          "type": "direct"
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "type": "tool_result",
+        "tool_use_id": "toolu_01DD14iV5QopW4KBuu2fdKFc",
+        "content": "RESULT: click succeeded\nURL: http://localhost:3100/\nTITLE: CoreVue 7.2\n\nCONTROLS:\n[1] link      \"Member Lookup\"  (frame: nav)\n[2] textbox   \"Member Number\"  (frame: content)\n[3] button    \"Search\"  value=\"Search\"  (frame: content)\n[4] text      \"Member Lookup\"  value=\"Member Number\"  (frame: content)\n\nVISIBLE TEXT:\n--- text (nav) ---\nMERIDIAN CU | CoreVue 7.2 Member Lookup\n--- text (content) ---\nCoreVue 7.2 — Member Lookup Member Lookup Member Number"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_01LnXRqyqsPx6heeSvMYBDfh",
+        "name": "type",
+        "input": {
+          "ref": 2,
+          "text": "100442",
+          "intent": "Enter the member number to look up"
+        },
+        "caller": {
+          "type": "direct"
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "type": "tool_result",
+        "tool_use_id": "toolu_01LnXRqyqsPx6heeSvMYBDfh",
+        "content": "RESULT: type succeeded\nURL: http://localhost:3100/\nTITLE: CoreVue 7.2\n\nCONTROLS:\n[1] link      \"Member Lookup\"  (frame: nav)\n[2] textbox   \"Member Number\"  value=\"100442\"  (frame: content)\n[3] button    \"Search\"  value=\"Search\"  (frame: content)\n[4] text      \"Member Lookup\"  value=\"Member Number\"  (frame: content)\n\nVISIBLE TEXT:\n--- text (nav) ---\nMERIDIAN CU | CoreVue 7.2 Member Lookup\n--- text (content) ---\nCoreVue 7.2 — Member Lookup Member Lookup Member Number"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_01QoVVveYHcCs3ZUWmgaqQqM",
+        "name": "click",
+        "input": {
+          "ref": 3,
+          "intent": "Search for the member record"
+        },
+        "caller": {
+          "type": "direct"
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "type": "tool_result",
+        "tool_use_id": "toolu_01QoVVveYHcCs3ZUWmgaqQqM",
+        "content": "RESULT: click succeeded\nURL: http://localhost:3100/\nTITLE: CoreVue 7.2\n\nCONTROLS:\n[1] link      \"Member Lookup\"  (frame: nav)\n[2] link      \"Open New Sub-Account\"  (frame: content)\n[3] text      \"Member Detail\"  value=\"Member Number\"  (frame: content)\n[4] text      \"Member Number\"  value=\"100442\"  (frame: content)\n[5] text      \"Member Detail\"  value=\"Name\"  (frame: content)\n[6] text      \"Name\"  value=\"ALVAREZ, ROSA M\"  (frame: content)\n[7] text      \"Member Detail\"  value=\"Status\"  (frame: content)\n[8] text      \"Status\"  value=\"ACTIVE\"  (frame: content)\n[9] text      \"Share Accounts\"  value=\"Savings (S1) Current Balance\"  (frame: content)\n[10] text      \"Savings (S1) Current Balance\"  value=\"$4,182.55\"  (frame: content)\n[11] text      \"Share Accounts\"  value=\"Checking (D1) Current Balance\"  (frame: content)\n[12] text      \"Checking (D1) Current Balance\"  value=\"$912.03\"  (frame: content)\n\nVISIBLE TEXT:\n--- text (nav) ---\nMERIDIAN CU | CoreVue 7.2 Member Lookup\n--- text (content) ---\nCoreVue 7.2 — Member Detail Member Detail Member Number 100442 Name ALVAREZ, ROSA M Status ACTIVE Share Accounts Savings (S1) Current Balance $4,182.55 Checking (D1) Current Balance $912.03 Open New Sub-Account"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "The member detail screen is showing. Let me extract the savings balance and member name."
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_012JeqfCJQYT8mdweNrx8s2h",
+        "name": "extract",
+        "input": {
+          "ref": 10,
+          "output_name": "savingsBalance",
+          "intent": "Capture the member's current savings (S1) balance, which is what was asked for",
+          "from": "value",
+          "pattern": "\\$([\\d,\\.]+)"
+        },
+        "caller": {
+          "type": "direct"
+        }
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_0165oZZCATzHWySv15rk8TH3",
+        "name": "extract",
+        "input": {
+          "ref": 6,
+          "output_name": "memberName",
+          "intent": "Capture the member name so the caller can confirm the right record was read",
+          "from": "value"
+        },
+        "caller": {
+          "type": "direct"
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "type": "tool_result",
+        "tool_use_id": "toolu_012JeqfCJQYT8mdweNrx8s2h",
+        "content": "Action failed: locator.inputValue: Error: Node is not an <input>, <textarea> or <select> element",
+        "is_error": true
+      },
+      {
+        "type": "tool_result",
+        "tool_use_id": "toolu_0165oZZCATzHWySv15rk8TH3",
+        "content": "Action failed: locator.inputValue: Error: Node is not an <input>, <textarea> or <select> element",
+        "is_error": true
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "thinking",
+        "thinking": "",
+        "signature": "CAISjwIKhwEIEBgCKkCrAb0IM3wfirycsiCWukNj/RKV0yK7QEHWlZxpXHe0kQNDj1tr3sFbop1HbDWloXbBBL7Jo+bIMZG1y3nywAaeMg1jbGF1ZGUtb3B1cy01OAFCCHRoaW5raW5nWiQ1OWVlNzQ1Zi05YjExLTQ2M2QtYWQxMS05YzlkOTc1MjdkN2QSDF+xpGfajUYztTPLDBoMHbUkW31uW2wz+15XIjBRvCSHHGPQTFmw9D8DiFxSQ6DahKbtGxIOx9C6O694Yj+GthsR7mZNBt8XpYFNT9UqNZjVPerO8NpYsJ1RMLgETci7W8+Uy9LDeELU6ak5e7b3L8Shw52ofjZFlIAIFukYG+/lXY4zGAE="
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_011Um44xWKvRgeNUCqAat8hu",
+        "name": "extract",
+        "input": {
+          "ref": 10,
+          "output_name": "savingsBalance",
+          "intent": "Capture the member's current savings (S1) balance, which is what was asked for",
+          "from": "text",
+          "pattern": "\\$([\\d,\\.]+)"
+        },
+        "caller": {
+          "type": "direct"
+        }
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_01JVLcaSbYa4xVqp8kymPUT5",
+        "name": "extract",
+        "input": {
+          "ref": 6,
+          "output_name": "memberName",
+          "intent": "Capture the member name so the caller can confirm the right record was read",
+          "from": "text"
+        },
+        "caller": {
+          "type": "direct"
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "type": "tool_result",
+        "tool_use_id": "toolu_011Um44xWKvRgeNUCqAat8hu",
+        "content": "RESULT: extracted \"4,182.55\" into output \"savingsBalance\"\nURL: http://localhost:3100/\nTITLE: CoreVue 7.2\n\nCONTROLS:\n[1] link      \"Member Lookup\"  (frame: nav)\n[2] link      \"Open New Sub-Account\"  (frame: content)\n[3] text      \"Member Detail\"  value=\"Member Number\"  (frame: content)\n[4] text      \"Member Number\"  value=\"100442\"  (frame: content)\n[5] text      \"Member Detail\"  value=\"Name\"  (frame: content)\n[6] text      \"Name\"  value=\"ALVAREZ, ROSA M\"  (frame: content)\n[7] text      \"Member Detail\"  value=\"Status\"  (frame: content)\n[8] text      \"Status\"  value=\"ACTIVE\"  (frame: content)\n[9] text      \"Share Accounts\"  value=\"Savings (S1) Current Balance\"  (frame: content)\n[10] text      \"Savings (S1) Current Balance\"  value=\"$4,182.55\"  (frame: content)\n[11] text      \"Share Accounts\"  value=\"Checking (D1) Current Balance\"  (frame: content)\n[12] text      \"Checking (D1) Current Balance\"  value=\"$912.03\"  (frame: content)\n\nVISIBLE TEXT:\n--- text (nav) ---\nMERIDIAN CU | CoreVue 7.2 Member Lookup\n--- text (content) ---\nCoreVue 7.2 — Member Detail Member Detail Member Number 100442 Name ALVAREZ, ROSA M Status ACTIVE Share Accounts Savings (S1) Current Balance $4,182.55 Checking (D1) Current Balance $912.03 Open New Sub-Account"
+      },
+      {
+        "type": "tool_result",
+        "tool_use_id": "toolu_01JVLcaSbYa4xVqp8kymPUT5",
+        "content": "RESULT: extracted \"ALVAREZ, ROSA M\" into output \"memberName\"\nURL: http://localhost:3100/\nTITLE: CoreVue 7.2\n\nCONTROLS:\n[1] link      \"Member Lookup\"  (frame: nav)\n[2] link      \"Open New Sub-Account\"  (frame: content)\n[3] text      \"Member Detail\"  value=\"Member Number\"  (frame: content)\n[4] text      \"Member Number\"  value=\"100442\"  (frame: content)\n[5] text      \"Member Detail\"  value=\"Name\"  (frame: content)\n[6] text      \"Name\"  value=\"ALVAREZ, ROSA M\"  (frame: content)\n[7] text      \"Member Detail\"  value=\"Status\"  (frame: content)\n[8] text      \"Status\"  value=\"ACTIVE\"  (frame: content)\n[9] text      \"Share Accounts\"  value=\"Savings (S1) Current Balance\"  (frame: content)\n[10] text      \"Savings (S1) Current Balance\"  value=\"$4,182.55\"  (frame: content)\n[11] text      \"Share Accounts\"  value=\"Checking (D1) Current Balance\"  (frame: content)\n[12] text      \"Checking (D1) Current Balance\"  value=\"$912.03\"  (frame: content)\n\nVISIBLE TEXT:\n--- text (nav) ---\nMERIDIAN CU | CoreVue 7.2 Member Lookup\n--- text (content) ---\nCoreVue 7.2 — Member Detail Member Detail Member Number 100442 Name ALVAREZ, ROSA M Status ACTIVE Share Accounts Savings (S1) Current Balance $4,182.55 Checking (D1) Current Balance $912.03 Open New Sub-Account"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "thinking",
+        "thinking": "",
+        "signature": "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"
+      },
+      {
+        "type": "text",
+        "text": "The member detail screen is displaying member 100442 with the savings balance captured."
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_01Hk65q6mrx4R6pteLMuMFn3",
+        "name": "finish",
+        "input": {
+          "capability_id": "member.read-savings-balance",
+          "name": "Read member savings balance",
+          "description": "Signs on to the CoreVue 7.2 back-office console, looks up a member by member number via Member Lookup, and returns the current balance of their Savings (S1) share account along with the member name shown on the Member Detail screen. Read-only: no records are modified. Note: the behaviour for a non-existent member number was deliberately not exercised during recording (probing it would have polluted the replayable flow), so no MEMBER_NOT_FOUND outcome text is declared yet.",
+          "inputs": [
+            {
+              "name": "operatorId",
+              "type": "string",
+              "description": "Operator ID used to sign on to the CoreVue console.",
+              "sensitivity": "secret",
+              "example": "operator1"
+            },
+            {
+              "name": "operatorPassword",
+              "type": "string",
+              "description": "Password for the operator sign-on.",
+              "sensitivity": "secret",
+              "example": "test-password"
+            },
+            {
+              "name": "memberNumber",
+              "type": "string",
+              "description": "The credit union member number to look up.",
+              "sensitivity": "pii",
+              "pattern": "^\\d{6}$",
+              "example": "100442"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "savingsBalance",
+              "type": "money",
+              "description": "Current balance of the member's Savings (S1) share account, without currency symbol (e.g. 4,182.55).",
+              "sensitivity": "pii"
+            },
+            {
+              "name": "memberName",
+              "type": "string",
+              "description": "Member name as shown on the Member Detail screen, in LAST, FIRST M format.",
+              "sensitivity": "pii"
+            }
+          ],
+          "outcomes": [],
+          "success_text": "Savings (S1) Current Balance"
+        },
+        "caller": {
+          "type": "direct"
+        }
+      }
+    ]
+  }
+]

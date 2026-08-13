@@ -1,0 +1,66 @@
+<!-- frame: (main) -->
+<!DOCTYPE html><html><head><title>CoreVue 7.2</title></head>
+<frameset rows="46,*" frameborder="1" border="1">
+  <frame name="nav" src="/nav" scrolling="no">
+  <frame name="content" src="/login">
+</frameset>
+</html>
+
+<!-- frame: nav -->
+<!DOCTYPE html><html><head><style>
+  body { font-family: Verdana, Geneva, sans-serif; font-size: 11px; background: #d4d0c8; margin: 0; }
+  table { border-collapse: collapse; }
+  .hdr { background: #003366; color: #fff; padding: 6px 10px; font-weight: bold; font-size: 12px; }
+  .panel { background: #fff; border: 2px inset #d4d0c8; margin: 8px; padding: 0; }
+  .panel td { padding: 4px 8px; }
+  .lbl { background: #ececec; font-weight: bold; white-space: nowrap; }
+  .err { color: #a00; font-weight: bold; padding: 6px 10px; background: #ffe8e8; border: 1px solid #a00; margin: 8px; }
+  .ok { color: #060; font-weight: bold; }
+  input[type=text], input[type=password] { border: 1px inset #808080; font-family: inherit; font-size: 11px; }
+  input[type=submit] { font-family: inherit; font-size: 11px; padding: 1px 10px; }
+  a { color: #003366; }
+</style></head><body style="background:#003366">
+<table width="100%"><tbody><tr>
+  <td class="hdr">MERIDIAN CU &nbsp;|&nbsp; CoreVue 7.2</td>
+  <td class="hdr" align="right">
+    <a href="/search" target="content" style="color:#cfe2ff" __cua_ref="1">Member Lookup</a>
+  </td>
+</tr></tbody></table>
+</body></html>
+
+<!-- frame: content -->
+<!DOCTYPE html><html><head><title>Member Detail</title><style>
+  body { font-family: Verdana, Geneva, sans-serif; font-size: 11px; background: #d4d0c8; margin: 0; }
+  table { border-collapse: collapse; }
+  .hdr { background: #003366; color: #fff; padding: 6px 10px; font-weight: bold; font-size: 12px; }
+  .panel { background: #fff; border: 2px inset #d4d0c8; margin: 8px; padding: 0; }
+  .panel td { padding: 4px 8px; }
+  .lbl { background: #ececec; font-weight: bold; white-space: nowrap; }
+  .err { color: #a00; font-weight: bold; padding: 6px 10px; background: #ffe8e8; border: 1px solid #a00; margin: 8px; }
+  .ok { color: #060; font-weight: bold; }
+  input[type=text], input[type=password] { border: 1px inset #808080; font-family: inherit; font-size: 11px; }
+  input[type=submit] { font-family: inherit; font-size: 11px; padding: 1px 10px; }
+  a { color: #003366; }
+</style></head>
+<body>
+<table width="100%" cellspacing="0"><tbody><tr><td class="hdr">CoreVue 7.2 &nbsp;—&nbsp; Member Detail</td></tr></tbody></table>
+
+<div class="panel"><table cellspacing="0" width="520">
+  <tbody><tr><td colspan="2"><b>Member Detail</b></td></tr>
+  <tr><td class="lbl" __cua_ref="3">Member Number</td><td __cua_ref="4">100442</td></tr>
+  <tr><td class="lbl" __cua_ref="5">Name</td><td __cua_ref="6">ALVAREZ, ROSA M</td></tr>
+  <tr><td class="lbl" __cua_ref="7">Status</td><td class="ok" __cua_ref="8">ACTIVE</td></tr>
+</tbody></table></div>
+
+<div class="panel"><table cellspacing="0" width="520">
+  <tbody><tr><td colspan="2"><b>Share Accounts</b></td></tr>
+  <!-- Balances rendered as bare text in a table cell: no id, no class, no data-* -->
+  <tr><td class="lbl" __cua_ref="9">Savings (S1) Current Balance</td><td __cua_ref="10">$4,182.55</td></tr>
+  <tr><td class="lbl" __cua_ref="11">Checking (D1) Current Balance</td><td __cua_ref="12">$912.03</td></tr>
+</tbody></table></div>
+
+<div class="panel"><table cellspacing="0" width="520">
+  <tbody><tr><td><a href="/subaccount?f_mbr=100442" __cua_ref="2">Open New Sub-Account</a></td></tr>
+</tbody></table></div>
+
+</body></html>

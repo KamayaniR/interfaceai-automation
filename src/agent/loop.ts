@@ -22,6 +22,7 @@ import { recordArtifact, type RecordedAction, type FinishContract } from './reco
 import { renderIndex } from '../surface/web/a11y-index.ts';
 import { WebSurface, PolicyBlockedError, ConfirmationRequiredError } from '../surface/web/web-surface.ts';
 import { Policy } from '../policy/policy.ts';
+import { classifyRisk } from '../policy/risk.ts';
 import { Redactor } from '../policy/redact.ts';
 import { RunLogger } from '../obs/logger.ts';
 import { SessionControl } from '../escalation/broker.ts';
@@ -85,7 +86,7 @@ export async function discover(opts: DiscoverOptions): Promise<DiscoverResult> {
   });
 
   const recorded: RecordedAction[] = [];
-  const messages: Anthropic.MessageParam[] = [];
+  const messages: Anthropic.Beta.BetaMessageParam[] = [];
   const deadline = Date.now() + opts.timeoutMs;
 
   logger.log('discovery.start', { goal: opts.goal, entryUrl: opts.entryUrl, model: DISCOVERY_MODEL });
@@ -117,9 +118,14 @@ export async function discover(opts: DiscoverOptions): Promise<DiscoverResult> {
         return { status: 'exhausted', reason: `timed out after ${opts.timeoutMs}ms`, runId, runDir };
       }
 
-      const response = await client.messages.create({
+      // Streamed, not a plain create(): a thinking turn at this budget can exceed the
+      // SDK's non-streaming timeout, and it refuses the request outright rather than
+      // hanging. `finalMessage()` gives us the accumulated turn once it completes.
+      const stream = client.beta.messages.stream({
         model: DISCOVERY_MODEL,
-        max_tokens: 8000,
+        // Generous: adaptive thinking shares this budget with the response, and a turn
+        // that spends it all on reasoning returns no tool call at all.
+        max_tokens: 32_000,
         system: SYSTEM_PROMPT,
         tools: DISCOVERY_TOOLS,
         messages,
@@ -128,8 +134,35 @@ export async function discover(opts: DiscoverOptions): Promise<DiscoverResult> {
         // and this loop runs once per capability rather than once per invocation.
         // Cast because the installed SDK's typings predate `adaptive`; the wire value
         // is current for Opus 5.
-        ...({ thinking: { type: 'adaptive' }, output_config: { effort: 'high' } } as object),
-      } as Anthropic.MessageCreateParamsNonStreaming);
+        //
+        // `fallbacks: "default"` opts into server-side refusal fallback. Opus 5 runs
+        // safety classifiers that can decline a request outright (HTTP 200,
+        // stop_reason: "refusal"), and driving a *banking* UI sits close enough to the
+        // boundary that benign automation work does occasionally trip them. Rather than
+        // dead-ending the run, the API re-serves the same request on the recommended
+        // fallback model inside the same call.
+        ...({
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'high' },
+          betas: ['server-side-fallback-2026-07-01'],
+          fallbacks: 'default',
+        } as object),
+      } as never);
+      const response = await stream.finalMessage();
+
+      // A refusal is a successful HTTP response, so it must be checked BEFORE reading
+      // content — indexing into `content` here would just find a thinking block.
+      if (response.stop_reason === 'refusal') {
+        const details = (response as unknown as { stop_details?: { category?: string; explanation?: string } })
+          .stop_details;
+        const reason =
+          `the request was declined by a safety classifier ` +
+          `(category: ${details?.category ?? 'unknown'})` +
+          (details?.explanation ? `: ${details.explanation}` : '') +
+          `. The whole fallback chain declined.`;
+        logger.log('discovery.refused', { category: details?.category, explanation: details?.explanation });
+        return { status: 'stuck', reason, runId, runDir };
+      }
 
       messages.push({ role: 'assistant', content: response.content });
 
@@ -142,13 +175,26 @@ export async function discover(opts: DiscoverOptions): Promise<DiscoverResult> {
         }
       }
 
-      const toolUses = response.content.filter((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use');
+      logger.log('model.response', {
+        stopReason: response.stop_reason,
+        blocks: response.content.map((b) => b.type),
+        usage: { input: response.usage.input_tokens, output: response.usage.output_tokens },
+      });
+
+      const toolUses = response.content.filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use');
       if (toolUses.length === 0) {
-        // No tool call and no finish: the model has stopped making progress.
-        return { status: 'stuck', reason: 'model produced no tool call', runId, runDir };
+        // No tool call and no finish. Report WHY — a turn truncated by max_tokens and a
+        // model that has genuinely run out of ideas look identical without stop_reason,
+        // and they need opposite fixes.
+        const reason =
+          response.stop_reason === 'max_tokens'
+            ? `the model's turn was truncated by max_tokens before it emitted a tool call (blocks: ${response.content.map((b) => b.type).join(', ') || 'none'}). Raise max_tokens or lower effort.`
+            : `model produced no tool call (stop_reason: ${response.stop_reason}, blocks: ${response.content.map((b) => b.type).join(', ') || 'none'})`;
+        logger.log('discovery.stuck', { reason });
+        return { status: 'stuck', reason, runId, runDir };
       }
 
-      const toolResults: Anthropic.ToolResultBlockParam[] = [];
+      const toolResults: Anthropic.Beta.BetaToolResultBlockParam[] = [];
 
       for (const use of toolUses) {
         const input = use.input as Record<string, unknown>;
@@ -248,10 +294,10 @@ export async function discover(opts: DiscoverOptions): Promise<DiscoverResult> {
         // Under the discovery profile, an irreversible action is escalated rather than
         // executed. We surface that to the model as a refusal it can reason about, not
         // as a crash — and it is instructed not to route around it.
-        const risk =
-          use.name === 'click' && /create|open account|transfer|submit|post|delete/i.test(String(input.intent ?? ''))
-            ? ('irreversible' as const)
-            : ('safe' as const);
+        //
+        // Classified from the control's own name AND the model's stated intent, through
+        // the single shared definition in policy/risk.ts.
+        const risk = classifyRisk(`${element?.name ?? ''} ${String(input.intent ?? '')}`, kind);
 
         let result;
         try {

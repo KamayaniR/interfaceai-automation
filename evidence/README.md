@@ -58,24 +58,76 @@ The member number is masked because the artifact declares it `pii`; the account 
 not, because it is declared `public`. The redaction is driven by the capability contract,
 not by a hardcoded field list.
 
-## Discovery run
+## Discovery run — `discovery/`
 
-**Not yet captured — this machine has no `ANTHROPIC_API_KEY`.**
+**Real.** One genuine LLM-driven run (`claude-opus-5`, adaptive thinking, high effort)
+against the live target app, on 2026-08-13.
 
-Discovery is the one path that genuinely requires a model, and the brief is right that a
-description of it is not a substitute. To produce it:
+| File | What it is |
+|---|---|
+| `run.jsonl` | Every observation, model decision and action, with the model's own reasoning |
+| `transcript.json` | The full conversation, redacted |
+| `final.png` / `final.html` | The end state the model declared success on |
+
+It produced `artifacts/member.read-savings-balance/v2.json` in 8 steps, and:
+
+- **parameterised correctly** — the literal `100442` it typed became `{{memberNumber}}`,
+  with a `^\d{6}$` pattern it inferred from the field's `maxlength`
+- **classified sensitivity itself** — `memberNumber` as `pii`, the operator credentials
+  as `secret`, so none of them appear in any log
+- **found the balance through the accessibility index**, not the DOM. `run.jsonl` shows
+  what it was given:
+
+```
+[10] text "Savings (S1) Current Balance"  value="$4,182.55"  (frame: content)
+```
+
+`10-replay-of-discovered-artifact/` then replays that artifact deterministically against
+a **different member** (100443), with no model in the loop:
+
+```
+STATUS   success
+OUTPUTS  { "savingsBalance": "17,420.00", "memberName": "OKONKWO, DANIEL" }
+TRACE    8 step(s), 808ms
+```
+
+That is the whole through-line: the model discovered, the artifact generalised, replay
+executed it cheaply and repeatably on data the model never saw.
+
+### What the discovery runs exposed
+
+Running this for real found three bugs that no amount of desk-checking had:
+
+1. **The risk heuristic over-classified.** "Submit the member lookup search" matched a
+   bare `submit` keyword, so a read-only search was treated as irreversible. The model
+   refused to work around the block — correctly — and the run dead-ended. Two files had
+   diverging definitions of "irreversible"; there is now one, in `src/policy/risk.ts`.
+2. **Perception indexed only interactive controls.** The balance is a plain `<td>`, so
+   the model could see it in the page text with no `ref` to point at. It spent 20 steps
+   probing for a ref that did not exist. Labelled read-only values are now indexed as
+   `role: text` — which is what a screen reader exposes, and why the fix is the right
+   shape rather than a patch.
+3. **A model can declare success as a "business outcome".** One run declared
+   `BALANCE_FOUND`; replay detected it on the success screen, terminated cleanly, and
+   never ran the extracts. The recorder now rejects any outcome whose marker text appears
+   on the success screen, and there is a regression test.
+
+Each is in the artifact schema's favour: all three were caught because replay reports
+*why* it stopped rather than just failing.
+
+### Reproducing
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-npm run target-app                     # in another shell
+export ANTHROPIC_API_KEY=sk-ant-...   # or put it in .env
+npm run target-app                    # in another shell
 npm run discover -- --goal "Look up member 100442 and read their current savings balance" --headed
 ```
 
-That writes `runs/discovery-<id>/` containing `run.jsonl` (every observation, model
-decision and action, with the model's stated reasoning), `transcript.json`, and
-screenshots — plus a freshly recorded artifact under `artifacts/`.
+Discovery appends the next version rather than overwriting, so this is safe to re-run.
 
-The artifacts committed here are hand-authored fixtures so that replay, escalation and
-the catalog are all runnable without a key. They are marked as such in their
-`provenance.model` field (`hand-authored-fixture`) rather than pretending to be
-discovered output.
+## A note on the v1 artifacts
+
+`v1` of each capability is a **hand-authored fixture**, marked as such in
+`provenance.model`, so replay/escalation/catalog run without an API key. `v2` of
+`member.read-savings-balance` is the genuinely discovered one
+(`provenance.model: claude-opus-5`).

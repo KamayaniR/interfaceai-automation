@@ -70,6 +70,39 @@ export function buildIndexScript(startRef: number): string {
       });
     }
 
+    // Labelled read-only values are part of the interface too.
+    //
+    // A control-only index is a real gap: in these screens the thing the caller
+    // actually WANTS — a balance, a status, an account number — is plain text in a
+    // table cell, not an input. Without a ref for it, a model can see the value in the
+    // page text and have no way to point at it. (It cost a discovery run: the model
+    // spent 20 steps probing for a ref that did not exist.) Screen readers expose
+    // static text for exactly this reason.
+    for (const cell of Array.prototype.slice.call(document.querySelectorAll('td, th'))) {
+      if (!isVisible(cell)) continue;
+      if (cell.querySelector(CONTROL_SELECTOR)) continue;   // it's a container, not a value
+      const value = norm(cell.textContent);
+      if (!value || value.length > 200) continue;           // not a field value
+      const label = tableLabel(cell);
+      if (!label) continue;                                 // unlabelled text is page chrome
+
+      const ref = nextRef++;
+      cell.setAttribute(REF_ATTR, String(ref));
+      out.push({
+        ref,
+        role: 'text',
+        name: label,
+        value,
+        tagName: cell.tagName.toLowerCase(),
+        inputType: undefined,
+        attrs: {},
+        formIndex: -1,
+        controlIndex: -1,
+        labelHint: label,
+        disabled: false,
+      });
+    }
+
     return {
       elements: out,
       nextRef,

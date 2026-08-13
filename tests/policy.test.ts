@@ -118,3 +118,42 @@ test('deep scrub reaches nested log payloads', () => {
   const scrubbed = redactor.scrubDeep({ a: { b: ['ssn 123-45-6789'] } }) as { a: { b: string[] } };
   assert.match(scrubbed.a.b[0]!, /REDACTED/);
 });
+
+// ---------------------------------------------------------------------------
+// Risk classification
+//
+// A real discovery run dead-ended here: "Submit the member lookup search" matched a
+// bare "submit" keyword, was classified irreversible, and the model — correctly —
+// refused to work around the block. These lock the calibration in both directions.
+// ---------------------------------------------------------------------------
+
+test('submitting a read-only search is NOT irreversible', async (t) => {
+  const { classifyRisk } = await import('../src/policy/risk.ts');
+  assert.equal(classifyRisk('Search Submit the member lookup search', 'click'), 'safe');
+  assert.equal(classifyRisk('Search Submit the read-only lookup for member 100442', 'click'), 'safe');
+});
+
+test('actions with real consequences ARE irreversible', async () => {
+  const { classifyRisk } = await import('../src/policy/risk.ts');
+  const cases = [
+    'Create Account Create the sub-account for this member',
+    'Open New Sub-Account Open a new sub-account',
+    'Transfer Transfer funds between shares',
+    'Delete Delete the member record',
+    'Submit Payment Submit payment to the payee',
+  ];
+  for (const c of cases) {
+    assert.equal(classifyRisk(c, 'click'), 'irreversible', `should be irreversible: "${c}"`);
+  }
+});
+
+test('reads can never be classified irreversible whatever the prose says', async () => {
+  const { classifyRisk } = await import('../src/policy/risk.ts');
+  assert.equal(classifyRisk('Delete transfer create account', 'extract'), 'safe');
+  assert.equal(classifyRisk('Delete transfer create account', 'navigate'), 'safe');
+});
+
+test('correctable writes are classified mutating, not irreversible', async () => {
+  const { classifyRisk } = await import('../src/policy/risk.ts');
+  assert.equal(classifyRisk('Save Save the edited address', 'click'), 'mutating');
+});

@@ -5,7 +5,7 @@
  * behaviour worth reviewing lives in the modules it calls.
  */
 
-import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { discover } from './agent/loop.ts';
@@ -86,6 +86,18 @@ async function cmdDiscover(): Promise<void> {
   const { artifact } = result;
   const dir = join(ARTIFACTS_DIR, artifact.capability.id);
   mkdirSync(dir, { recursive: true });
+
+  // Never overwrite an existing version. A capability's history is append-only —
+  // re-recording an existing capability produces the NEXT version, so the artifact that
+  // production has been replaying stays byte-identical and reviewable, and the two can
+  // be diffed to see exactly what the model did differently this time.
+  const existing = readdirSync(dir)
+    .filter((f) => /^v\d+\.json$/.test(f))
+    .map((f) => Number(f.slice(1, -5)));
+  if (existing.length) {
+    artifact.capability.version = Math.max(...existing) + 1;
+  }
+
   const path = join(dir, `v${artifact.capability.version}.json`);
   writeFileSync(path, JSON.stringify(artifact, null, 2));
 

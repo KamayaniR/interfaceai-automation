@@ -216,6 +216,23 @@ export function synthesiseTarget(el: {
 }): TargetRef {
   const candidates: TargetCandidate[] = [];
 
+  // A read-only value cell has no role/name of its own and no position in the control
+  // ordering — it is addressed entirely by the label sitting beside it.
+  if (el.role === 'text') {
+    if (el.labelHint) {
+      candidates.push({ by: 'label-proximity', labelText: el.labelHint, direction: 'right', index: 0 });
+      candidates.push({ by: 'anchor-relative', anchorText: el.labelHint, role: 'text', offset: 0 });
+    }
+    if (candidates.length === 0) {
+      candidates.push({ by: 'structural', formIndex: el.formIndex, controlIndex: el.controlIndex });
+    }
+    return {
+      framePath: el.framePath,
+      candidates,
+      fingerprint: { tagName: el.tagName, inputType: el.inputType, attrs: el.attrs },
+    };
+  }
+
   if (el.name) {
     candidates.push({ by: 'role-name', role: el.role, name: el.name, nameIsSubstring: false });
   }

@@ -162,6 +162,19 @@ non-default answer. Failures carry a narrow class — `hard`, `recovery_exhauste
 `recovery_exhausted` is deliberately distinct from `hard`: "we recognised this and our fix
 didn't work" is a different engineering problem from "we have never seen this state".
 
+**What running discovery for real changed.** Three defects surfaced only under a live
+model, and all three are recorded in `evidence/README.md`: a risk heuristic that matched
+a bare `submit` keyword and classified a read-only search as irreversible (two files had
+diverging definitions of "irreversible" — there is now one, `src/policy/risk.ts`); a
+perception layer that indexed only interactive controls, leaving the model able to *see*
+a balance in a `<td>` but with no reference to point at (labelled read-only values are now
+indexed as `role: text`, which is what a screen reader exposes); and a model declaring
+success itself as a business outcome, which made replay terminate cleanly one step before
+reading the data (the recorder now rejects any outcome whose marker text appears on the
+success screen). Each was diagnosable in minutes *because* replay reports which step,
+what was expected and what was observed — which is the argument for the result contract
+more than any of the prose above.
+
 **Drift** (secondary, per the brief). Every resolution reports which rung matched. Rung 0
 is healthy; anything lower means the surface moved and the artifact is running on a
 fallback, so it comes back to the caller as a `drift` entry rather than being swallowed.
@@ -300,13 +313,18 @@ same sensitivity metadata, and I would not ship this to production without it.
 
 **Deliberately not built:**
 
-- **The discovery run has not been executed.** This machine has no API key, so
-  `/evidence/` contains no discovery log. The loop is complete and runnable
-  (`src/agent/loop.ts`, one command in the README); the committed artifacts are
-  hand-authored fixtures, marked as such in `provenance.model` rather than dressed up as
-  discovered output, so that everything else is runnable without a key. I would rather
-  ship a labelled fixture than an unlabelled fake — but this is the one gap I would close
-  first, and it is the brief's one non-negotiable.
+- **Exploration is recorded into the flow.** The recorder captures every action that
+  succeeded, so when the model deliberately probed the not-found path to learn its
+  wording, that five-step detour ended up in the artifact and would replay on every
+  invocation. The fix is a `probe` affordance that acts on the surface without being
+  recorded, letting the model explore failure paths *and* keep the flow clean. I left it
+  because the honest version needs the model to distinguish exploring from doing, and a
+  half-designed version would silently drop real steps.
+- **Consequence of the above:** the discovered `v2` declares no business outcomes at all.
+  Without probing, the model never sees the "no member record found" wording, so it
+  cannot declare `MEMBER_NOT_FOUND`. The hand-authored `v1` declares three. This is the
+  clearest evidence that record-what-happened and record-the-intended-flow are different
+  problems, and that the schema is ahead of the recorder here.
 - **Desktop surface** — interface defined and argued, not implemented.
 - **Multi-tenant merging** — schema hooks and the drift-based detection story are there;
   no override merge, no second variant app.
@@ -320,7 +338,9 @@ same sensitivity metadata, and I would not ship this to production without it.
 
 **What I would build next, in order:**
 
-1. **Run discovery for real** and commit the evidence.
+1. **A non-recording `probe` action**, so a discovery run can explore failure paths
+   without polluting the recorded flow — the single highest-value fix, because it is what
+   currently stands between a discovered artifact and a *complete* one.
 2. **Shared sub-flows** in the schema — sign-on is duplicated across two capabilities
    today and would be duplicated across twenty tomorrow.
 3. **Semantic policy limits** — per-capability constraints on action parameters, which is

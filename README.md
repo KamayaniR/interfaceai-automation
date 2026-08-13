@@ -146,7 +146,7 @@ npm run catalog -- show member.read-savings-balance    # full JSON tool definiti
 ### Tests
 
 ```bash
-npm test        # 29 tests: schema contracts, locator ladder, guardrails, redaction
+npm test        # 34 tests: schema contracts, locator ladder, guardrails, redaction, risk calibration
 npm run typecheck
 ```
 
@@ -182,7 +182,16 @@ Set these in `.env` (see `.env.example`). All have working defaults except the k
 
 ## A note on the committed artifacts
 
-The two artifacts in `artifacts/` are **hand-authored fixtures**, marked as such in their
-`provenance.model` field, so that everything except discovery is runnable without an API
-key. They are shaped exactly as the recorder emits them. Running discovery yourself will
-produce a genuine one alongside them.
+`v1` of each capability is a **hand-authored fixture**, marked as such in its
+`provenance.model` field, so that everything except discovery runs without an API key.
+
+`member.read-savings-balance/v2.json` is **genuinely discovered** — emitted by a real
+`claude-opus-5` run against the live app (`provenance.model: claude-opus-5`). Its evidence
+is in [evidence/discovery/](evidence/README.md). Replay it with:
+
+```bash
+npm run replay -- --capability member.read-savings-balance --version 2 \
+  --input memberNumber=100443 --input operatorId=OP1042 --input operatorPassword=x
+```
+
+Discovery appends the next version rather than overwriting, so re-running it is safe.

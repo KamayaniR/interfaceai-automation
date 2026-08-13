@@ -1,0 +1,25 @@
+
+Replaying member.read-savings-balance v2 (draft)
+  no LLM in the decision loop
+
+
+────────────────────────────────────────────────────────────────
+STATUS   success
+OUTPUTS  {
+           "savingsBalance": "17,420.00",
+           "memberName": "OKONKWO, DANIEL"
+         }
+
+TRACE    8 step(s), 885ms
+         ok        s01  Open the corevue entry point
+         ok        s02  Enter the operator ID to sign on to the console
+         ok        s03  Enter the operator password to sign on
+         ok        s04  Submit the sign-on form to reach the console
+         ok        s05  Enter the member number to look up
+         ok        s06  Search for the member record
+         ok        s07  Capture the member's current savings (S1) balance, which is what was asked for
+         ok        s08  Capture the member name so the caller can confirm the right record was read
+
+EVIDENCE runs/replay-87623158/run.jsonl
+────────────────────────────────────────────────────────────────
+
