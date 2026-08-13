@@ -112,7 +112,13 @@ Running this for real found three bugs that no amount of desk-checking had:
    never ran the extracts. The recorder now rejects any outcome whose marker text appears
    on the success screen, and there is a regression test.
 
-Each is in the artifact schema's favour: all three were caught because replay reports
+A fourth surfaced immediately afterwards, from `npm run verify`: because discovery
+appends a version, and `catalog.get()` resolved to the *highest* version, the newly
+discovered draft silently became what every documented command invoked — and its inputs
+had been renamed. Resolution now returns the latest **approved** version, which is what
+the draft/approved gate was for all along.
+
+Each is in the artifact schema's favour: all four were caught because replay reports
 *why* it stopped rather than just failing.
 
 ### Reproducing

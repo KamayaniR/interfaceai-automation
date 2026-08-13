@@ -65,16 +65,49 @@ export class Catalog {
     return out;
   }
 
+  /**
+   * Resolve a capability to a concrete artifact.
+   *
+   * With no explicit version this returns the latest **approved** version — NOT simply
+   * the highest one. That distinction is the whole point of the approval gate, and
+   * getting it wrong is a live hazard rather than a nicety: recording a new version of
+   * an existing capability would otherwise silently become what production calls, with
+   * a contract nobody has reviewed. It happened here — a discovery run renamed an input
+   * from `memberId` to `memberNumber`, and every existing caller broke instantly.
+   *
+   * So: drafts are visible in the catalog and replayable on request, but a caller who
+   * does not name a version gets the last thing a human signed off on.
+   */
   get(capabilityId: string, version?: number): CapabilityArtifact | null {
     const dir = join(this.artifactsDir, capabilityId);
     if (!existsSync(dir)) return null;
-    const file = version
-      ? `v${version}.json`
-      : readdirSync(dir)
-          .filter((f) => /^v\d+\.json$/.test(f))
-          .sort((a, b) => Number(b.slice(1, -5)) - Number(a.slice(1, -5)))[0];
-    if (!file || !existsSync(join(dir, file))) return null;
-    return parseArtifact(JSON.parse(readFileSync(join(dir, file), 'utf8')));
+
+    if (version !== undefined) {
+      const explicit = join(dir, `v${version}.json`);
+      if (!existsSync(explicit)) return null;
+      return parseArtifact(JSON.parse(readFileSync(explicit, 'utf8')));
+    }
+
+    const versions = readdirSync(dir)
+      .filter((f) => /^v\d+\.json$/.test(f))
+      .sort((a, b) => Number(b.slice(1, -5)) - Number(a.slice(1, -5)));
+
+    let newestOverall: CapabilityArtifact | null = null;
+    for (const file of versions) {
+      let artifact: CapabilityArtifact;
+      try {
+        artifact = parseArtifact(JSON.parse(readFileSync(join(dir, file), 'utf8')));
+      } catch {
+        continue; // a malformed version must not shadow a good one
+      }
+      newestOverall ??= artifact;
+      if (artifact.capability.status === 'approved') return artifact;
+    }
+
+    // Nothing approved yet. Return the newest draft so a freshly discovered capability
+    // is runnable at all — the catalog still refuses to advertise it as invocable, and
+    // the CLI says so out loud.
+    return newestOverall;
   }
 
   /**

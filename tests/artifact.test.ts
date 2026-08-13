@@ -178,3 +178,20 @@ test('an outcome that would fire on the success screen is rejected at record tim
     }
   }
 });
+
+test('version resolution returns the latest APPROVED version, not the highest', async () => {
+  // The hazard this guards: a discovery run appends a new draft version with a changed
+  // input contract, and every existing caller silently breaks. Approval is what makes a
+  // version the one production gets.
+  const catalog = new Catalog('artifacts');
+  const resolved = catalog.get('member.read-savings-balance');
+  assert.ok(resolved);
+  assert.equal(resolved.capability.status, 'approved');
+  assert.ok(resolved.inputs.memberId, 'the approved contract is what callers get');
+
+  // The draft is still reachable, but only if you ask for it by version.
+  const draft = catalog.get('member.read-savings-balance', 2);
+  assert.ok(draft);
+  assert.equal(draft.capability.status, 'draft');
+  assert.ok(draft.inputs.memberNumber, 'the draft has its own, different contract');
+});

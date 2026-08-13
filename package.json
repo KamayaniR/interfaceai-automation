@@ -14,7 +14,8 @@
     "replay": "tsx --env-file-if-exists=.env src/cli.ts replay",
     "catalog": "tsx --env-file-if-exists=.env src/cli.ts catalog",
     "test": "tsx --env-file-if-exists=.env --test tests/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify": "bash scripts/verify.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",

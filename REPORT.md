@@ -175,6 +175,15 @@ success screen). Each was diagnosable in minutes *because* replay reports which 
 what was expected and what was observed — which is the argument for the result contract
 more than any of the prose above.
 
+**Version resolution is by approval, not recency.** `catalog.get(id)` with no explicit
+version returns the latest *approved* artifact, not the highest-numbered one. This is not
+hygiene — it is the approval gate doing its actual job. A discovery run appends a new
+draft version, and that draft can legitimately change the contract: the real run here
+renamed an input from `memberId` to `memberNumber`. Resolving by recency would have made
+an unreviewed draft the thing every caller invokes, breaking all of them silently. A
+draft stays reachable by explicit `--version`, and the CLI says out loud when it is
+running one.
+
 **Drift** (secondary, per the brief). Every resolution reports which rung matched. Rung 0
 is healthy; anything lower means the surface moved and the artifact is running on a
 fallback, so it comes back to the caller as a `drift` entry rather than being swallowed.

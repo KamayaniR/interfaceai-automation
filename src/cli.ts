@@ -172,6 +172,10 @@ async function cmdReplay(): Promise<void> {
   }
 
   console.log(`\nReplaying ${artifact.capability.id} v${artifact.capability.version} (${artifact.capability.status})`);
+  if (!version && artifact.capability.status === 'draft') {
+    console.log(`  ! no approved version exists — running a DRAFT that no human has reviewed.`);
+    console.log(`    review it, then: npm run catalog -- approve ${artifact.capability.id}`);
+  }
   console.log(`  no LLM in the decision loop\n`);
 
   const engine = new ReplayEngine({

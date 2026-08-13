@@ -143,10 +143,18 @@ npm run catalog                                        # list
 npm run catalog -- show member.read-savings-balance    # full JSON tool definition
 ```
 
-### Tests
+### Verify the whole thing yourself
 
 ```bash
-npm test        # 34 tests: schema contracts, locator ladder, guardrails, redaction, risk calibration
+npm run verify
+```
+
+Runs typecheck, the unit tests, and every replay scenario — and **asserts** the result of
+each, so you get PASS/FAIL rather than output to read. It starts and stops the target app
+itself and needs no API key. 14 checks, ~40s.
+
+```bash
+npm test          # 35 unit tests
 npm run typecheck
 ```
 
