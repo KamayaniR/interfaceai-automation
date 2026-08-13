@@ -123,16 +123,32 @@ npm run replay -- --capability member.open-subaccount \
 
 The run pauses at the irreversible step and files an intervention request. Open the
 operator console: it shows which capability, which step, why it stopped, the redacted
-inputs and a screenshot of the live session. The headed browser is that same session —
-same cookies, same half-filled form — so you can drive it yourself. Click **Resume** and
-the automation takes control back, re-verifies where it is, and completes:
+inputs and a screenshot of the live session.
+
+The headed browser is that same session — same cookies, same half-filled form. Drive it
+yourself: change the **Account Type** to `S3`, and watch that change come back in the
+automation's own result. Then click **Resume**.
+
+To reproduce it without clicking, a third terminal can stand in for the operator:
+
+```bash
+npx tsx scripts/simulate-operator.ts     # attaches to the SAME session over CDP
+```
+
+It connects to the live browser the automation is using (not a new one) and its clicks
+are real DOM events, so the action-recording path is genuinely exercised — that is how
+`evidence/replay/09-…` was captured. Either way, click **Resume** in the console and the
+automation takes control back, re-verifies where it is, and completes:
 
 ```
 STATUS   success
 OUTPUTS  { "newAccountNumber": "100442-S2" }
 HUMAN    1 intervention(s):
-         · s09: operator local-operator, 11024ms
+         · s09: operator local-operator, 3 action(s) recorded
 ```
+
+Note `100442-S3` — the operator changed the account type mid-flow and the automation
+finished on that same session. It is not a fresh context.
 
 ### 5. The capability catalog
 
