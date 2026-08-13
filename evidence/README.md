@@ -46,12 +46,28 @@ as `recovered` rather than `ok`, so a caller can tell the difference.
 the observed shape. Note the value itself is not echoed: `observed` reads
 `a 19-character value that did not match`, because the input is classified `pii`.
 
-**09** — the human-in-the-loop handoff, end to end:
+**09** — the human-in-the-loop handoff, end to end. The operator took the live session,
+**changed the account type from S2 to S3**, and the automation's own result came back
+`newAccountNumber: "100442-S3"` — proof it resumed on the same session rather than a fresh
+one. Their actions are in the intervention record:
+
+```
+21:52:27  click   input[ctl_09]
+21:52:27  change  input[ctl_09] = 25.00
+21:52:27  change  select[ctl_07] = S3
+```
+
+Files:
 
 - `console.txt` — the engine pausing at the irreversible step, then completing
 - `operator-console.html` — exactly what the operator saw, including the live screenshot
 - `intervention-request.json` — the request record with the operator's decision and note
 - `run.jsonl` — `escalation.raised` → `control.transfer` → `escalation.resolved`
+
+`scripts/simulate-operator.ts` stands in for the human here so the scenario is
+reproducible — it attaches to the same session over CDP and its clicks are real DOM
+events, so the recording path is genuinely exercised. A person clicking in the visible
+window produces identical output.
 
 `inputs` in the intervention record reads `{"memberId": "****42", "accountType": "S2"}`.
 The member number is masked because the artifact declares it `pii`; the account type is

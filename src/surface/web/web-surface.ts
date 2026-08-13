@@ -21,7 +21,7 @@ import { ControlDeniedError } from '../surface.ts';
 import type { Action, TargetRef, RiskClass } from '../../schema/artifact.ts';
 import { buildIndexScript, type RawIndex } from './a11y-index.ts';
 import { resolveTarget, describeFailure } from './resolve-target.ts';
-import { TARGET_ATTR, REF_ATTR } from './browser-lib.ts';
+import { TARGET_ATTR, REF_ATTR, HUMAN_ACTION_RECORDER } from './browser-lib.ts';
 import { Policy } from '../../policy/policy.ts';
 import type { SessionControl } from '../../escalation/broker.ts';
 
@@ -31,6 +31,8 @@ export interface WebSurfaceOptions {
   control: SessionControl;
   /** Emitted for the run log; lets the engine record what the surface did and why. */
   onEvent?: (event: { type: string; detail: Record<string, unknown> }) => void;
+  /** CDP port for operator attachment when headed. */
+  cdpPort?: number;
 }
 
 /** Blocked by policy, as opposed to failing for an app reason. */
@@ -63,7 +65,14 @@ export class WebSurface implements Surface {
 
   static async launch(opts: WebSurfaceOptions): Promise<WebSurface> {
     const s = new WebSurface(opts);
-    s.browser = await chromium.launch({ headless: !opts.headed });
+    // When headed, expose a CDP endpoint. That is what lets an operator surface attach
+    // to THIS live session rather than opening a second browser — the whole point of
+    // the handoff. It is also how scripts/simulate-operator.ts stands in for a human
+    // without faking anything: its clicks are real DOM events on the real page.
+    s.browser = await chromium.launch({
+      headless: !opts.headed,
+      args: opts.headed ? [`--remote-debugging-port=${opts.cdpPort ?? 9222}`] : [],
+    });
     s.context = await s.browser.newContext({ viewport: { width: 1280, height: 900 } });
     s.page = await s.context.newPage();
     await s.installHumanActionRecorder();
@@ -109,46 +118,7 @@ export class WebSurface implements Surface {
       });
     });
 
-    await this.context.addInitScript(() => {
-      const describe = (el: Element): string => {
-        const tag = el.tagName.toLowerCase();
-        const name =
-          el.getAttribute('name') ??
-          el.getAttribute('aria-label') ??
-          (el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 40);
-        return `${tag}${name ? `[${name}]` : ''}`;
-      };
-      document.addEventListener(
-        'click',
-        (e) => {
-          const t = e.target as Element | null;
-          // @ts-expect-error injected binding
-          if (t && window.__cuaRecordHumanAction) {
-            // @ts-expect-error injected binding
-            window.__cuaRecordHumanAction({ kind: 'click', detail: describe(t) });
-          }
-        },
-        true,
-      );
-      document.addEventListener(
-        'change',
-        (e) => {
-          const t = e.target as HTMLInputElement | null;
-          if (!t) return;
-          // Never record the value of a password field.
-          const isSecret = (t.getAttribute('type') ?? '').toLowerCase() === 'password';
-          // @ts-expect-error injected binding
-          if (window.__cuaRecordHumanAction) {
-            // @ts-expect-error injected binding
-            window.__cuaRecordHumanAction({
-              kind: 'change',
-              detail: `${describe(t)} = ${isSecret ? '[REDACTED]' : (t.value ?? '').slice(0, 40)}`,
-            });
-          }
-        },
-        true,
-      );
-    });
+    await this.context.addInitScript({ content: HUMAN_ACTION_RECORDER });
   }
 
   // -------------------------------------------------------------------------

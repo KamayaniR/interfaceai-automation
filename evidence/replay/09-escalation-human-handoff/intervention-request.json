@@ -1,5 +1,5 @@
 {
-  "runId": "0ad6f5e0",
+  "runId": "3747f5af",
   "capability": {
     "id": "member.open-subaccount",
     "version": 1,
@@ -20,17 +20,33 @@
     "memberId": "****42",
     "accountType": "S2"
   },
-  "screenshotPath": "runs/replay-0ad6f5e0/escalation-s09.png",
+  "screenshotPath": "runs/replay-3747f5af/escalation-s09.png",
   "currentUrl": "http://localhost:3100/",
-  "id": "dbfa017e",
-  "createdAt": "2026-08-13T20:42:01.733Z",
+  "id": "04e79f2c",
+  "createdAt": "2026-08-13T21:52:25.527Z",
   "status": "resolved",
   "resolution": {
     "operator": "local-operator",
     "action": "resume",
-    "note": "Verified member eligibility in the core; approved opening the S2 share.",
-    "tookControlAt": "2026-08-13T20:42:01.733Z",
-    "returnedControlAt": "2026-08-13T20:42:12.757Z",
-    "recordedActions": []
+    "note": "Reviewed the record, corrected the opening deposit to 25.00 and switched to S3 before approving.",
+    "tookControlAt": "2026-08-13T21:52:25.528Z",
+    "returnedControlAt": "2026-08-13T21:52:28.535Z",
+    "recordedActions": [
+      {
+        "at": "2026-08-13T21:52:27.856Z",
+        "kind": "click",
+        "detail": "input[ctl_09]"
+      },
+      {
+        "at": "2026-08-13T21:52:27.872Z",
+        "kind": "change",
+        "detail": "input[ctl_09] = 25.00"
+      },
+      {
+        "at": "2026-08-13T21:52:27.877Z",
+        "kind": "change",
+        "detail": "select[ctl_07] = S3"
+      }
+    ]
   }
 }

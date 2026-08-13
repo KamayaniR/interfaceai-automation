@@ -131,3 +131,45 @@ export const BROWSER_HELPERS = `
     };
   }
 `;
+
+/**
+ * Records what a human does while they hold the session.
+ *
+ * Shipped as SOURCE TEXT, like everything else in this file, and that is load-bearing
+ * rather than stylistic. Passing a *function* to `addInitScript` looks equivalent but
+ * is not: the bundler rewrites function declarations to preserve their names, and
+ * Playwright serialises the function with `.toString()` — so the rewritten body arrives
+ * in the browser referencing a helper (`__name`) that exists only in the Node bundle.
+ * It throws on the first line and every listener after it is silently never registered.
+ * A string is transpiled by nobody and means exactly what it says.
+ *
+ * Element-level semantics only — never keystrokes, and never the value of a password
+ * field. The point is an auditable record of what the operator did, not surveillance.
+ */
+export const HUMAN_ACTION_RECORDER = `
+  (function () {
+    function describe(el) {
+      var tag = el.tagName ? el.tagName.toLowerCase() : 'node';
+      var name = el.getAttribute && (el.getAttribute('name') || el.getAttribute('aria-label'));
+      if (!name) name = (el.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 40);
+      return tag + (name ? '[' + name + ']' : '');
+    }
+
+    function send(kind, detail) {
+      if (window.__cuaRecordHumanAction) window.__cuaRecordHumanAction({ kind: kind, detail: detail });
+    }
+
+    document.addEventListener('click', function (e) {
+      if (e.target) send('click', describe(e.target));
+    }, true);
+
+    document.addEventListener('change', function (e) {
+      var t = e.target;
+      if (!t) return;
+      var isSecret = (t.getAttribute && (t.getAttribute('type') || '').toLowerCase()) === 'password';
+      send('change', describe(t) + ' = ' + (isSecret ? '[REDACTED]' : (t.value || '').slice(0, 40)));
+    }, true);
+
+    window.__cuaListenersReady = true;
+  })();
+`;

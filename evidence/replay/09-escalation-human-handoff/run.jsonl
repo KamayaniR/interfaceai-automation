@@ -1,38 +1,38 @@
-{"at":"2026-08-13T20:42:00.831Z","runId":"0ad6f5e0","type":"replay.start","capability":"member.open-subaccount","version":1,"status":"approved","inputs":{"memberId":"****42","accountType":"S2"}}
-{"at":"2026-08-13T20:42:01.300Z","runId":"0ad6f5e0","type":"step.start","stepId":"s01","intent":"Open the CoreVue back-office entry point","risk":"safe"}
-{"at":"2026-08-13T20:42:01.301Z","runId":"0ad6f5e0","type":"policy.check","action":"navigate","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:42:01.367Z","runId":"0ad6f5e0","type":"step.end","stepId":"s01","status":"ok","durationMs":67}
-{"at":"2026-08-13T20:42:01.367Z","runId":"0ad6f5e0","type":"step.start","stepId":"s02","intent":"Enter the operator ID into the sign-on form","risk":"safe"}
-{"at":"2026-08-13T20:42:01.367Z","runId":"0ad6f5e0","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:42:01.411Z","runId":"0ad6f5e0","type":"step.end","stepId":"s02","status":"ok","durationMs":44}
-{"at":"2026-08-13T20:42:01.411Z","runId":"0ad6f5e0","type":"step.start","stepId":"s03","intent":"Enter the operator password into the sign-on form","risk":"safe"}
-{"at":"2026-08-13T20:42:01.411Z","runId":"0ad6f5e0","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:42:01.458Z","runId":"0ad6f5e0","type":"step.end","stepId":"s03","status":"ok","durationMs":47}
-{"at":"2026-08-13T20:42:01.458Z","runId":"0ad6f5e0","type":"step.start","stepId":"s04","intent":"Submit the sign-on form","risk":"safe"}
-{"at":"2026-08-13T20:42:01.458Z","runId":"0ad6f5e0","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:42:01.549Z","runId":"0ad6f5e0","type":"step.end","stepId":"s04","status":"ok","durationMs":91}
-{"at":"2026-08-13T20:42:01.549Z","runId":"0ad6f5e0","type":"step.start","stepId":"s05","intent":"Type the member number into the lookup field","risk":"safe"}
-{"at":"2026-08-13T20:42:01.549Z","runId":"0ad6f5e0","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:42:01.561Z","runId":"0ad6f5e0","type":"step.end","stepId":"s05","status":"ok","durationMs":12}
-{"at":"2026-08-13T20:42:01.561Z","runId":"0ad6f5e0","type":"step.start","stepId":"s06","intent":"Submit the member lookup","risk":"safe"}
-{"at":"2026-08-13T20:42:01.561Z","runId":"0ad6f5e0","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:42:01.628Z","runId":"0ad6f5e0","type":"step.end","stepId":"s06","status":"ok","durationMs":67}
-{"at":"2026-08-13T20:42:01.628Z","runId":"0ad6f5e0","type":"step.start","stepId":"s07","intent":"Follow the link to open a new sub-account for this member","risk":"safe"}
-{"at":"2026-08-13T20:42:01.628Z","runId":"0ad6f5e0","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:42:01.687Z","runId":"0ad6f5e0","type":"step.end","stepId":"s07","status":"ok","durationMs":59}
-{"at":"2026-08-13T20:42:01.687Z","runId":"0ad6f5e0","type":"step.start","stepId":"s08","intent":"Choose the requested share account type","risk":"safe"}
-{"at":"2026-08-13T20:42:01.687Z","runId":"0ad6f5e0","type":"policy.check","action":"select","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:42:01.697Z","runId":"0ad6f5e0","type":"step.end","stepId":"s08","status":"ok","durationMs":10}
-{"at":"2026-08-13T20:42:01.697Z","runId":"0ad6f5e0","type":"step.start","stepId":"s09","intent":"Create the sub-account — IRREVERSIBLE: this opens a real account on the member's record","risk":"irreversible"}
-{"at":"2026-08-13T20:42:01.697Z","runId":"0ad6f5e0","type":"policy.check","action":"click","risk":"irreversible","decision":"confirm","humanApproved":false}
-{"at":"2026-08-13T20:42:01.733Z","runId":"0ad6f5e0","type":"escalation.raised","requestId":"dbfa017e","stepId":"s09","reason":"step is classified \"irreversible\" and the replay profile requires \"confirm\" for that class"}
-{"at":"2026-08-13T20:42:01.733Z","runId":"0ad6f5e0","type":"control.transfer","holder":"human"}
-{"at":"2026-08-13T20:42:12.755Z","runId":"0ad6f5e0","type":"control.transfer","holder":"automation"}
-{"at":"2026-08-13T20:42:12.757Z","runId":"0ad6f5e0","type":"escalation.resolved","requestId":"dbfa017e","status":"resolved","humanActions":0}
-{"at":"2026-08-13T20:42:12.758Z","runId":"0ad6f5e0","type":"policy.check","action":"click","risk":"irreversible","decision":"confirm","humanApproved":true}
-{"at":"2026-08-13T20:42:12.869Z","runId":"0ad6f5e0","type":"step.end","stepId":"s09","status":"ok","durationMs":11172}
-{"at":"2026-08-13T20:42:12.869Z","runId":"0ad6f5e0","type":"step.start","stepId":"s10","intent":"Read the new account number from the confirmation screen","risk":"safe"}
-{"at":"2026-08-13T20:42:12.869Z","runId":"0ad6f5e0","type":"policy.check","action":"extract","risk":"safe","decision":"allow","humanApproved":false}
-{"at":"2026-08-13T20:42:12.878Z","runId":"0ad6f5e0","type":"output.captured","name":"newAccountNumber","value":"*******S2"}
-{"at":"2026-08-13T20:42:12.878Z","runId":"0ad6f5e0","type":"step.end","stepId":"s10","status":"ok","durationMs":9}
-{"at":"2026-08-13T20:42:12.881Z","runId":"0ad6f5e0","type":"replay.success","outputs":{"newAccountNumber":"100442-S2"}}
+{"at":"2026-08-13T21:52:21.967Z","runId":"3747f5af","type":"replay.start","capability":"member.open-subaccount","version":1,"status":"approved","inputs":{"memberId":"****42","accountType":"S2"}}
+{"at":"2026-08-13T21:52:24.567Z","runId":"3747f5af","type":"step.start","stepId":"s01","intent":"Open the CoreVue back-office entry point","risk":"safe"}
+{"at":"2026-08-13T21:52:24.571Z","runId":"3747f5af","type":"policy.check","action":"navigate","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T21:52:24.847Z","runId":"3747f5af","type":"step.end","stepId":"s01","status":"ok","durationMs":285}
+{"at":"2026-08-13T21:52:24.848Z","runId":"3747f5af","type":"step.start","stepId":"s02","intent":"Enter the operator ID into the sign-on form","risk":"safe"}
+{"at":"2026-08-13T21:52:24.848Z","runId":"3747f5af","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T21:52:24.898Z","runId":"3747f5af","type":"step.end","stepId":"s02","status":"ok","durationMs":50}
+{"at":"2026-08-13T21:52:24.898Z","runId":"3747f5af","type":"step.start","stepId":"s03","intent":"Enter the operator password into the sign-on form","risk":"safe"}
+{"at":"2026-08-13T21:52:24.898Z","runId":"3747f5af","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T21:52:24.920Z","runId":"3747f5af","type":"step.end","stepId":"s03","status":"ok","durationMs":22}
+{"at":"2026-08-13T21:52:24.920Z","runId":"3747f5af","type":"step.start","stepId":"s04","intent":"Submit the sign-on form","risk":"safe"}
+{"at":"2026-08-13T21:52:24.920Z","runId":"3747f5af","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T21:52:25.161Z","runId":"3747f5af","type":"step.end","stepId":"s04","status":"ok","durationMs":241}
+{"at":"2026-08-13T21:52:25.162Z","runId":"3747f5af","type":"step.start","stepId":"s05","intent":"Type the member number into the lookup field","risk":"safe"}
+{"at":"2026-08-13T21:52:25.162Z","runId":"3747f5af","type":"policy.check","action":"type","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T21:52:25.174Z","runId":"3747f5af","type":"step.end","stepId":"s05","status":"ok","durationMs":12}
+{"at":"2026-08-13T21:52:25.174Z","runId":"3747f5af","type":"step.start","stepId":"s06","intent":"Submit the member lookup","risk":"safe"}
+{"at":"2026-08-13T21:52:25.175Z","runId":"3747f5af","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T21:52:25.326Z","runId":"3747f5af","type":"step.end","stepId":"s06","status":"ok","durationMs":152}
+{"at":"2026-08-13T21:52:25.326Z","runId":"3747f5af","type":"step.start","stepId":"s07","intent":"Follow the link to open a new sub-account for this member","risk":"safe"}
+{"at":"2026-08-13T21:52:25.326Z","runId":"3747f5af","type":"policy.check","action":"click","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T21:52:25.443Z","runId":"3747f5af","type":"step.end","stepId":"s07","status":"ok","durationMs":117}
+{"at":"2026-08-13T21:52:25.443Z","runId":"3747f5af","type":"step.start","stepId":"s08","intent":"Choose the requested share account type","risk":"safe"}
+{"at":"2026-08-13T21:52:25.443Z","runId":"3747f5af","type":"policy.check","action":"select","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T21:52:25.459Z","runId":"3747f5af","type":"step.end","stepId":"s08","status":"ok","durationMs":16}
+{"at":"2026-08-13T21:52:25.459Z","runId":"3747f5af","type":"step.start","stepId":"s09","intent":"Create the sub-account — IRREVERSIBLE: this opens a real account on the member's record","risk":"irreversible"}
+{"at":"2026-08-13T21:52:25.462Z","runId":"3747f5af","type":"policy.check","action":"click","risk":"irreversible","decision":"confirm","humanApproved":false}
+{"at":"2026-08-13T21:52:25.527Z","runId":"3747f5af","type":"escalation.raised","requestId":"04e79f2c","stepId":"s09","reason":"step is classified \"irreversible\" and the replay profile requires \"confirm\" for that class"}
+{"at":"2026-08-13T21:52:25.528Z","runId":"3747f5af","type":"control.transfer","holder":"human"}
+{"at":"2026-08-13T21:52:28.534Z","runId":"3747f5af","type":"control.transfer","holder":"automation"}
+{"at":"2026-08-13T21:52:28.536Z","runId":"3747f5af","type":"escalation.resolved","requestId":"04e79f2c","status":"resolved","humanActions":3}
+{"at":"2026-08-13T21:52:28.536Z","runId":"3747f5af","type":"policy.check","action":"click","risk":"irreversible","decision":"confirm","humanApproved":true}
+{"at":"2026-08-13T21:52:28.672Z","runId":"3747f5af","type":"step.end","stepId":"s09","status":"ok","durationMs":3213}
+{"at":"2026-08-13T21:52:28.672Z","runId":"3747f5af","type":"step.start","stepId":"s10","intent":"Read the new account number from the confirmation screen","risk":"safe"}
+{"at":"2026-08-13T21:52:28.672Z","runId":"3747f5af","type":"policy.check","action":"extract","risk":"safe","decision":"allow","humanApproved":false}
+{"at":"2026-08-13T21:52:28.680Z","runId":"3747f5af","type":"output.captured","name":"newAccountNumber","value":"*******S3"}
+{"at":"2026-08-13T21:52:28.680Z","runId":"3747f5af","type":"step.end","stepId":"s10","status":"ok","durationMs":8}
+{"at":"2026-08-13T21:52:28.683Z","runId":"3747f5af","type":"replay.success","outputs":{"newAccountNumber":"100442-S3"}}
