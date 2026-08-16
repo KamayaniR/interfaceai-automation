@@ -3,3 +3,6 @@ node_modules/
 *.log
 runs/
 .DS_Store
+
+# work-in-progress, not part of the submission
+portions/
