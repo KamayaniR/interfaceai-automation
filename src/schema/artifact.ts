@@ -388,6 +388,13 @@ export const CapabilityArtifact = z.object({
      * the model conversation that happened to produce it.
      */
     transcriptDigest: z.string(),
+    /**
+     * sha256 over the canonical artifact, excluding this field. Optional because
+     * artifacts recorded before content addressing existed are still valid — but when
+     * present, replay verifies it, so approval binds to content rather than to a
+     * version number someone could edit around.
+     */
+    contentHash: z.string().optional(),
   }),
 });
 export type CapabilityArtifact = z.infer<typeof CapabilityArtifact>;

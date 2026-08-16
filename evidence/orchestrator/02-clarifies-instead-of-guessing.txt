@@ -1,0 +1,9 @@
+
+GOAL     look up the savings balance for Rosa
+CATALOG  2 capability(s) available
+
+ROUTE    clarify
+REASON   The goal matches member_read-savings-balance (read an S1 savings balance in CoreVue), but the capability requires a 6-digit member number and the goal only supplies a first name. There is no lookup-by-name capability, and I will not guess a member number.
+
+  What is Rosa's 6-digit CoreVue member number?
+

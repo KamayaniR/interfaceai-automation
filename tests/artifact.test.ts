@@ -195,3 +195,28 @@ test('version resolution returns the latest APPROVED version, not the highest', 
   assert.equal(draft.capability.status, 'draft');
   assert.ok(draft.inputs.memberNumber, 'the draft has its own, different contract');
 });
+
+test('content hash detects a tampered artifact', async () => {
+  // Approval binds to CONTENT. Editing a step after approval must be detectable, or
+  // `status: approved` is just a field someone can leave alone while changing what runs.
+  const { computeContentHash, verifyContentHash } = await import('../src/schema/hash.ts');
+  const artifact = parseArtifact(JSON.parse(readFileSync(FIXTURE, 'utf8')));
+
+  assert.equal(verifyContentHash(artifact).state, 'match', 'shipped artifact must verify');
+
+  const tampered = structuredClone(artifact);
+  const step = tampered.steps.find((s) => s.action.kind === 'type');
+  assert.ok(step && step.action.kind === 'type');
+  step.action.value = '999999';
+
+  const verdict = verifyContentHash(tampered);
+  assert.equal(verdict.state, 'mismatch');
+});
+
+test('content hash ignores key order and whitespace', async () => {
+  // A reformat is not tampering. If it were, every prettier run would look like an attack.
+  const { computeContentHash } = await import('../src/schema/hash.ts');
+  const artifact = parseArtifact(JSON.parse(readFileSync(FIXTURE, 'utf8')));
+  const reordered = JSON.parse(JSON.stringify(artifact, Object.keys(artifact).sort()));
+  assert.equal(computeContentHash(artifact), computeContentHash({ ...reordered, ...artifact }));
+});

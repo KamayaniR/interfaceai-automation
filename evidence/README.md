@@ -214,3 +214,33 @@ for.
 `provenance.model`, so replay/escalation/catalog run without an API key. `v2` of
 `member.read-savings-balance` is the genuinely discovered one
 (`provenance.model: claude-opus-5`).
+
+## Orchestrator — `orchestrator/`
+
+`npm run ask` is the agent-facing path: a natural-language goal in, an existing capability
+replayed out. Three real runs, one per decision:
+
+| File | Goal | Route |
+|---|---|---|
+| `01-routes-to-existing-capability.txt` | "what is the savings balance for member 100443?" | **invoke** → `member.read-savings-balance v1`, `savingsBalance: "17,420.00"` |
+| `02-clarifies-instead-of-guessing.txt` | "look up the savings balance for Rosa" | **clarify** — *"I will not guess a member number"* |
+| `03-falls-through-to-discovery.txt` | "export last month's wire transfer audit log as a csv" | **discover** — nothing matches |
+
+`02` is the one that matters. The capability matched perfectly; only the member number was
+missing. A router that guessed would act on the wrong member's account, so a missing
+required input becomes a question — enforced in pure code, not by asking the model nicely.
+
+`03` shows the reasoning is real: *"Neither touches wire transfer records, audit logs,
+date-range reporting, or CSV export, so this is not a near-miss variant of an existing
+flow."* Discovery is offered, never started silently — it costs minutes and money.
+
+`04` and `05` are the same artifact rendered for its two audiences: the human approver
+(`catalog review`) and a calling agent (`catalog show`).
+
+### A sixth defect, found by the router on its first run
+
+`catalog.get()` resolved to the latest **approved** version while `catalog.list()` still
+returned the **highest** version. So the tool definitions handed to the router described
+v2's contract (`memberNumber`, `operatorId`, `operatorPassword`) while the guardrails would
+have invoked v1 (`memberId`). The catalog was advertising one contract and running another.
+`list()` now delegates to `get()`.

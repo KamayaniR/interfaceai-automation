@@ -11,6 +11,8 @@ import { join } from 'node:path';
 import { discover } from './agent/loop.ts';
 import { ReplayEngine } from './replay/engine.ts';
 import { Catalog } from './catalog/catalog.ts';
+import { renderForReview } from './catalog/review.ts';
+import { proposeRoute, applyGuardrails } from './orchestrator/router.ts';
 import { parseArtifact } from './schema/artifact.ts';
 import type { ReplayResult } from './schema/result.ts';
 
@@ -199,6 +201,74 @@ async function cmdReplay(): Promise<void> {
 
 // ---------------------------------------------------------------------------
 
+/**
+ * `ask` — the agent-facing entry point.
+ *
+ * This is what §8 means by "show one being invoked": a natural-language goal arrives,
+ * the catalog is consulted, and an existing capability is replayed. Discovery is the
+ * fallback, not the default — replay is ~800ms and free, discovery is minutes and
+ * costs money, so routing to discovery when a capability already exists is the
+ * expensive mistake.
+ */
+async function cmdAsk(): Promise<void> {
+  const goal = process.argv.slice(3).filter((a) => !a.startsWith('--')).join(' ');
+  if (!goal) {
+    console.error('usage: npm run ask -- "look up member 100442\'s savings balance"');
+    process.exit(2);
+  }
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error('\nANTHROPIC_API_KEY is not set — the router uses a model to match goals to capabilities.\n');
+    process.exit(2);
+  }
+
+  const catalog = new Catalog(ARTIFACTS_DIR);
+  const defs = catalog.toolDefs();
+
+  console.log(`\nGOAL     ${goal}`);
+  console.log(`CATALOG  ${defs.length} capability(s) available\n`);
+
+  const proposed = await proposeRoute(goal, defs);
+  const route = applyGuardrails(proposed, catalog, goal);
+
+  console.log(`ROUTE    ${route.action}`);
+  console.log(`REASON   ${route.reason}`);
+
+  if (route.action === 'clarify') {
+    console.log(`\n  ${route.question}\n`);
+    process.exit(0);
+  }
+
+  if (route.action === 'refuse') {
+    console.log();
+    process.exit(1);
+  }
+
+  if (route.action === 'discover') {
+    // Never silently spend minutes and money. The user asked a question; starting a
+    // discovery run is a different, much larger action than answering it.
+    console.log(`\n  Nothing in the catalog does this. To record a new capability:\n`);
+    console.log(`      npm run discover -- --goal "${goal}"\n`);
+    process.exit(0);
+  }
+
+  console.log(`INVOKE   ${route.artifact.capability.id} v${route.artifact.capability.version}`);
+  console.log(`INPUTS   ${JSON.stringify(route.inputs)}`);
+  console.log(`CONF     ${route.confidence}`);
+
+  const engine = new ReplayEngine({
+    artifact: route.artifact,
+    inputs: route.inputs,
+    policyPath: POLICY_PATH,
+    headed: flag('headed'),
+    runsDir: RUNS_DIR,
+    interventionsDir: INTERVENTIONS_DIR,
+    escalationTimeoutMs: Number(arg('escalation-timeout', '300000')),
+  });
+  printResult(await engine.run());
+}
+
+// ---------------------------------------------------------------------------
+
 function cmdCatalog(): void {
   const catalog = new Catalog(ARTIFACTS_DIR);
   const sub = process.argv[3];
@@ -218,6 +288,17 @@ function cmdCatalog(): void {
     const path = join(ARTIFACTS_DIR, id, `v${artifact.capability.version}.json`);
     writeFileSync(path, JSON.stringify(artifact, null, 2));
     console.log(`Approved ${id} v${artifact.capability.version} — now invocable unattended.`);
+    return;
+  }
+
+  if (sub === 'review') {
+    const id = process.argv[4];
+    const artifact = id ? catalog.get(id, arg('version') ? Number(arg('version')) : undefined) : null;
+    if (!artifact) {
+      console.error('usage: npm run catalog -- review <capability-id> [--version N]');
+      process.exit(2);
+    }
+    console.log('\n' + renderForReview(artifact) + '\n');
     return;
   }
 
@@ -264,6 +345,9 @@ switch (command) {
   case 'replay':
     await cmdReplay();
     break;
+  case 'ask':
+    await cmdAsk();
+    break;
   case 'catalog':
     cmdCatalog();
     break;
@@ -274,11 +358,14 @@ Computer-use automation system
   npm run discover -- --goal "<natural language goal>" [--url ...] [--headed]
       One LLM-driven run against the live app. Emits a capability artifact.
 
+  npm run ask -- "<natural language goal>"
+      Route a goal to an existing capability and run it. Discovery is the fallback.
+
   npm run replay -- --capability <id> [--input k=v ...] [--fault <name>] [--headed]
       Deterministic replay. No LLM. Faults: notfound validation permdenied timeout dialog slow
 
-  npm run catalog [-- show <id> | -- approve <id>]
-      The agent-facing capability catalog.
+  npm run catalog [-- review <id> | -- show <id> | -- approve <id>]
+      review = the human projection; show = the agent tool definition.
 
   npm run operator
       Operator console for human escalation (separate process).

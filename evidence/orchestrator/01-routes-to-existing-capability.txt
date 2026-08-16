@@ -1,0 +1,28 @@
+
+GOAL     what is the savings balance for member 100443?
+CATALOG  2 capability(s) available
+
+ROUTE    invoke
+REASON   Goal asks for a member's savings balance and supplies a valid 6-digit member number (100443), matching the capability's single required argument and its S1 savings balance return.
+INVOKE   member.read-savings-balance v1
+INPUTS   {"memberId":"100443"}
+CONF     0.96
+
+────────────────────────────────────────────────────────────────
+STATUS   success
+OUTPUTS  {
+           "savingsBalance": "17,420.00"
+         }
+
+TRACE    7 step(s), 2559ms
+         ok        s01  Open the CoreVue back-office entry point
+         ok        s02  Enter the operator ID into the sign-on form
+         ok        s03  Enter the operator password into the sign-on form
+         ok        s04  Submit the sign-on form
+         ok        s05  Type the member number into the lookup field
+         ok        s06  Submit the member lookup
+         ok        s07  Read the S1 savings current balance from the Share Accounts panel
+
+EVIDENCE runs/replay-32e400a5/run.jsonl
+────────────────────────────────────────────────────────────────
+

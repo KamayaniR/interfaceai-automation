@@ -36,6 +36,7 @@ import type { ReplayResult, StepTrace, DriftReport } from '../schema/result.ts';
 import { WebSurface, PolicyBlockedError, ConfirmationRequiredError } from '../surface/web/web-surface.ts';
 import { ControlDeniedError } from '../surface/surface.ts';
 import { verifyCheckpoint, detectCondition } from './conditions.ts';
+import { verifyContentHash } from '../schema/hash.ts';
 import { Policy } from '../policy/policy.ts';
 import { Redactor } from '../policy/redact.ts';
 import { RunLogger } from '../obs/logger.ts';
@@ -97,6 +98,7 @@ export class ReplayEngine {
     try {
       // Pre-flight. An invalid invocation must fail before we touch a browser —
       // cheaper, and it keeps contract errors clearly distinct from app errors.
+      this.verifyIntegrity();
       this.validateInputs();
 
       this.surface = await WebSurface.launch({
@@ -148,6 +150,29 @@ export class ReplayEngine {
   // -------------------------------------------------------------------------
   // Pre-flight
   // -------------------------------------------------------------------------
+
+  /**
+   * Refuse to run an artifact whose content doesn't match the hash recorded in it.
+   *
+   * This is the check that makes approval mean something: a reviewer approved specific
+   * *content*, and if the steps have been edited since, the mismatch surfaces here —
+   * before a browser exists, let alone before anything is clicked in a bank's core.
+   */
+  private verifyIntegrity(): void {
+    const verdict = verifyContentHash(this.opts.artifact);
+    this.logger.log('integrity.check', { state: verdict.state });
+
+    if (verdict.state === 'mismatch') {
+      throw new Terminate('failure', {
+        class: 'contract_violation',
+        stepId: null,
+        message:
+          'artifact content does not match its recorded hash — it has been modified since it was recorded',
+        expected: verdict.recorded,
+        observed: verdict.actual,
+      });
+    }
+  }
 
   private validateInputs(): void {
     const specs = this.opts.artifact.inputs;

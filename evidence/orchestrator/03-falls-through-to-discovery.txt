@@ -1,0 +1,11 @@
+
+GOAL     export last month's wire transfer audit log as a csv
+CATALOG  2 capability(s) available
+
+ROUTE    discover
+REASON   Both available capabilities are member-account operations in CoreVue (read S1 savings balance, open an S2/S3 sub-account). Neither touches wire transfer records, audit logs, date-range reporting, or CSV export, so this is not a near-miss variant of an existing flow — it is a different application area entirely and would need a new recording.
+
+  Nothing in the catalog does this. To record a new capability:
+
+      npm run discover -- --goal "export last month's wire transfer audit log as a csv"
+

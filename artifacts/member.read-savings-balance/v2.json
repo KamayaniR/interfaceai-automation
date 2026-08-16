@@ -416,6 +416,7 @@
     "model": "claude-opus-5",
     "runId": "fd56baf1",
     "discoveredAt": "2026-08-13T21:29:38.262Z",
-    "transcriptDigest": "d5f9edd4079eab7c"
+    "transcriptDigest": "d5f9edd4079eab7c",
+    "contentHash": "sha256:0768e5955a0608fe388cc64f4b01e8d5"
   }
 }

@@ -1,0 +1,46 @@
+
+──────────────────────────────────────────────────────────────────────────
+CAPABILITY  Read member savings balance
+            member.read-savings-balance  v1  ·  APPROVED
+APP         meridian-systems/corevue
+RECORDED BY hand-authored-fixture  on 2026-08-13
+INTEGRITY   content hash verified
+
+Look up a member by their 6-digit member number in CoreVue and return the current balance of their S1 savings share account.
+
+TAKES
+  memberId           string  matching ^\d{6}$  [pii]
+                     The member's 6-digit CoreVue member number.
+
+RETURNS
+  savingsBalance     money  [pii]  — Current balance of the S1 savings share account, without the currency symbol.
+
+OR ANSWERS WITH
+  MEMBER_NOT_FOUND         No member record exists with that member number. This is a legitimate answer, not a failure.
+  MEMBER_NUMBER_INVALID    The member number was rejected by the application's own validation.
+  ACCESS_DENIED            The operator's role is not authorised to view this member record.
+
+STEPS  (7)
+  1  open http://localhost:3100
+     verify: "Operator Sign On" appears
+  2  type svc_automation into textbox "Operator ID"  (content)   [3 locators]
+  3  type not-a-real-password into textbox "Password"  (content)   [3 locators]
+  4  click button "Sign On"  (content)   [3 locators]
+     verify: "Member Number" appears
+  5  type {{memberId}} into textbox "Member Number"  (content)   [4 locators]
+  6  click button "Search"  (content)   [3 locators]
+     verify: "Member Detail" appears
+     if "No member record found matching that number." → returns MEMBER_NOT_FOUND
+     if "Member Number must be exactly 6 digits." → returns MEMBER_NUMBER_INVALID
+     if "SEC-0412" → returns ACCESS_DENIED
+     if "Your session has expired" → recovers (4 steps, ≤2 attempts)
+     if "Scheduled maintenance window begins" → recovers (1 step, ≤2 attempts)
+  7  read savingsBalance from the field labelled "Savings (S1) Current Balance"  (content)   [2 locators]
+
+SUCCEEDS WHEN
+  the Member Detail screen showing the S1 savings balance is displayed in the content frame
+  verify: "Savings (S1) Current Balance" appears
+
+No irreversible steps — this capability only reads.
+──────────────────────────────────────────────────────────────────────────
+

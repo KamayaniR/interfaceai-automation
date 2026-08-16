@@ -22,6 +22,15 @@ in observations, element references, actions and checkpoints, never selectors or
 And **both discovery and replay pass through the same policy choke point**, so guardrails
 can't be bypassed by a future code path that forgets to check.
 
+**The router sits outside that boundary, deliberately.** `npm run ask` turns a goal into
+a decision — match an existing capability, ask a question, or record a new one — and it
+is a *client* of the catalog rather than part of the system. The brief draws this line
+(*"the agent-facing product decides what to do; this system is how it reliably and safely
+does it"*), and it is load-bearing: if routing lived inside the integration layer, every
+institution would be forced to route our way. A bank that won't put an LLM in that path
+can swap it for a rules engine and every safety property still holds, because the gates
+the router must pass — approval status, `ParamSpec`, policy — are all enforced elsewhere.
+
 Decisions worth defending:
 
 - **Playwright is a driver, not the source of truth for targeting.** The artifact holds no
@@ -82,6 +91,22 @@ with a `Disposition` of exactly `recover` / `business-outcome` / `fail` / `escal
 engine therefore *cannot* express "I'm not sure which of these this is", and a reviewer sees
 a capability's whole failure model without reading the executor.
 
+**Approval binds to content, not to a version number.** `provenance.contentHash` is a
+sha256 over the canonical artifact excluding itself, and replay refuses to run when it
+doesn't match. Without it, `status: "approved"` is a mutable field living inside the very
+document it approves — nothing stops someone editing a step and leaving the status alone,
+and the artifact would still run against a bank's core claiming a human signed it off.
+Canonicalisation sorts keys, so a reformat isn't mistaken for tampering.
+
+**One artifact, two projections.** §3.2 asks that an artifact be reviewable by "both a
+human reviewer and a calling agent" — different readers with different needs. Diffable is
+not the same as understandable: 250 lines of nested locator ladders are technically
+reviewable, and realistically get skimmed, which makes the approval gate theatre. So
+`catalog show` renders the typed contract for agents, and `catalog review` renders what
+an approver actually has to judge — steps in plain language, what each verifies, the
+failure model, and whether anything is irreversible. Neither is stored; both derive from
+the one source of truth.
+
 Also: `sensitivity` lives on the parameter spec, so a capability can't be defined without
 someone classifying its inputs. `status: draft|approved` gates unattended invocation — a
 freshly discovered capability is a draft nobody has read. Storage is plain JSON at
@@ -134,12 +159,13 @@ an unreviewed draft what every caller invokes.
 healthy; lower means the surface moved, and it comes back to the caller rather than being
 swallowed. A fingerprint mismatch is reported without blocking.
 
-**What live runs found.** Four defects surfaced only under a real model — a risk heuristic
-matching bare `submit`; perception indexing only interactive controls, so a balance rendered
-in a `<td>` had no reference to point at; a model declaring success itself as a business
-outcome; and the version-resolution hazard above. All four are written up in
-`evidence/README.md`, and all four were diagnosable in minutes *because* the result contract
-reports which step, what was expected and what was observed.
+**What live runs found.** Six defects surfaced only under a real model or a real routing
+call — a risk heuristic matching bare `submit`; perception indexing only interactive
+controls, so a balance in a `<td>` had no reference; a model declaring success itself as a
+business outcome; the version-resolution hazard above; and the catalog advertising one
+version while resolving another. All are written up in `evidence/README.md`, and all were
+diagnosable in minutes *because* the result contract reports which step, what was expected
+and what was observed.
 
 ## 4. Heterogeneity & multi-tenant
 
@@ -149,18 +175,16 @@ provide. A **desktop** surface implements the same interface over UIAutomation/A
 `role-name` and `anchor-relative` port directly, `label-proximity` becomes "the control right
 of this label within the group", `structural` becomes a control-tree path, and `framePath`
 generalises to a window/pane path. Schema and replay engine are unchanged. A
-**terminal/3270** surface is the same with a coarser element model. The weak case is a
-surface with no accessibility layer at all, where the ladder degrades to
-anchor-relative-to-OCR-text and would want a screenshot-diff checkpoint type.
+**terminal/3270** surface is the same with a coarser element model. The weak case is a surface with no
+accessibility layer at all, where the ladder degrades to anchor-relative-over-OCR.
 
 **Multi-tenant reuse.** `app.variantOf` and `app.tenantId` are the hooks. A capability
-recorded against the base vendor product carries `variantOf: null` and is the shared asset. A
-diverging tenant specialises rather than re-records: a small artifact pointing at the base,
-containing only the steps whose targets or checkpoints actually differ, merged by step id.
-**Drift is already the fleet-health signal** — aggregated across tenants sharing a base
-capability, a rung-0 success rate decaying for one tenant means that tenant diverged;
-decaying everywhere means the vendor shipped a new version. New tenants then cost a
-*verification* run, not a *recording* run.
+recorded against the base vendor product is the shared asset; a diverging tenant specialises
+rather than re-records — an artifact pointing at the base, containing only the steps whose
+targets or checkpoints differ, merged by step id. **Drift is already the fleet-health
+signal**: aggregated across tenants sharing a base capability, a rung-0 success rate decaying
+for one tenant means that tenant diverged; decaying everywhere means the vendor shipped a new
+version. New tenants then cost a *verification* run, not a *recording* run.
 
 ## 5. Escalation & handoff
 
@@ -230,12 +254,30 @@ merging (hooks and the drift story are there; no override merge, no second varia
 console auth and durable queue; screenshot redaction; shared sub-flows — both capabilities
 repeat the sign-on steps verbatim.
 
+**Storage: files, not a document DB, and not sub-flow references at runtime.** A DB wins on
+search and loses on review (§3.2) — a change becomes a diff inside one blob, with no
+per-capability history and racing whole-file writes. References are worse: re-recording
+`sign-on@v1` for a new MFA step would silently change an `approved` capability while its
+file, version and diff stayed identical, so approval would stop meaning anything. The right
+shape is compose at author time, **flatten at publish**, record what it composed from; add
+a *derived* index for search when search hurts. And most duplication isn't a sub-flow
+problem — sign-on is session infrastructure. An artifact declaring "I need an authenticated
+session on corevue", satisfied once by the runtime and amortised across a hundred replays,
+beats both copying and referencing. `preconditions` already exists; it needs a session
+provider beside it. That's the change I'd make before portions.
+
 **The cut that bothers me most:** the recorder captures every successful action, so when the
 model deliberately probed the not-found path to learn its wording, that detour landed in the
 flow. Telling it not to explore fixed the flow but cost the knowledge — the discovered `v2`
 declares no business outcomes, where the hand-authored `v1` declares three.
 Record-what-happened and record-the-intended-flow are different problems, and the schema is
 ahead of the recorder here.
+
+**Also designed, not built:** a dashboard with chat history and real-time intervention
+alerts. The escalation half of that has a subtlety worth recording — replay *blocks* while
+a human holds the session, so a dashboard must talk to the intervention queue, never call
+resume on the engine. A request/response shape there would force the live session to be
+reconstructed, which is the one thing §3.6 forbids.
 
 **Next, in order:** (1) a non-recording `probe` action, so discovery can explore failure paths
 without polluting the flow — the highest-value fix, because it is what stands between a

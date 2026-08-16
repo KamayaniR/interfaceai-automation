@@ -1,11 +1,11 @@
 {
   "schemaVersion": "1.0",
   "capability": {
-    "id": "member.open-subaccount",
+    "id": "draft-only-capability",
     "version": 1,
-    "name": "Open a new member sub-account",
-    "description": "Look up a member and open a new share sub-account of the requested type, returning the new account number from the confirmation screen.",
-    "status": "approved"
+    "name": "Read member savings balance",
+    "description": "Look up a member by their 6-digit member number in CoreVue and return the current balance of their S1 savings share account.",
+    "status": "draft"
   },
   "app": {
     "appId": "corevue",
@@ -14,27 +14,11 @@
     "tenantId": null,
     "entryUrl": "http://localhost:3100"
   },
-  "inputs": {
-    "memberId": {
-      "type": "string",
-      "description": "The member's 6-digit CoreVue member number.",
-      "required": true,
-      "pattern": "^\\d{6}$",
-      "sensitivity": "pii"
-    },
-    "accountType": {
-      "type": "string",
-      "description": "Share account type code to open. S2 = Secondary Savings, S3 = Holiday Club.",
-      "required": true,
-      "pattern": "^S[23]$",
-      "sensitivity": "public",
-      "example": "S2"
-    }
-  },
+  "inputs": {},
   "outputs": {
-    "newAccountNumber": {
-      "type": "string",
-      "description": "The account number assigned to the newly created sub-account.",
+    "savingsBalance": {
+      "type": "money",
+      "description": "Current balance of the S1 savings share account, without the currency symbol.",
       "sensitivity": "pii"
     }
   },
@@ -42,6 +26,11 @@
     {
       "code": "MEMBER_NOT_FOUND",
       "description": "No member record exists with that member number. This is a legitimate answer, not a failure.",
+      "terminal": true
+    },
+    {
+      "code": "MEMBER_NUMBER_INVALID",
+      "description": "The member number was rejected by the application's own validation.",
       "terminal": true
     },
     {
@@ -211,7 +200,7 @@
       "intent": "Type the member number into the lookup field",
       "action": {
         "kind": "type",
-        "value": "{{memberId}}",
+        "value": "100442",
         "clearFirst": true
       },
       "target": {
@@ -316,6 +305,21 @@
           "then": {
             "then": "business-outcome",
             "outcomeCode": "MEMBER_NOT_FOUND"
+          }
+        },
+        {
+          "when": {
+            "id": "member-number-invalid",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "Member Number must be exactly 6 digits."
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NUMBER_INVALID"
           }
         },
         {
@@ -520,136 +524,12 @@
     },
     {
       "id": "s07",
-      "intent": "Follow the link to open a new sub-account for this member",
-      "action": {
-        "kind": "click"
-      },
-      "target": {
-        "framePath": [
-          "content"
-        ],
-        "candidates": [
-          {
-            "by": "role-name",
-            "role": "link",
-            "name": "Open New Sub-Account",
-            "nameIsSubstring": false
-          },
-          {
-            "by": "role-name",
-            "role": "link",
-            "name": "Sub-Account",
-            "nameIsSubstring": true
-          }
-        ],
-        "fingerprint": {
-          "tagName": "a",
-          "attrs": {}
-        }
-      },
-      "risk": "safe",
-      "waitFor": {
-        "kind": "text-present",
-        "text": "Account Type",
-        "framePath": [
-          "content"
-        ],
-        "timeoutMs": 10000,
-        "description": "the sub-account creation form is displayed in the content frame"
-      },
-      "onCondition": []
-    },
-    {
-      "id": "s08",
-      "intent": "Choose the requested share account type",
-      "action": {
-        "kind": "select",
-        "value": "{{accountType}}"
-      },
-      "target": {
-        "framePath": [
-          "content"
-        ],
-        "candidates": [
-          {
-            "by": "role-name",
-            "role": "combobox",
-            "name": "Account Type",
-            "nameIsSubstring": false
-          },
-          {
-            "by": "label-proximity",
-            "labelText": "Account Type",
-            "direction": "right",
-            "index": 0
-          },
-          {
-            "by": "structural",
-            "formIndex": 0,
-            "controlIndex": 0
-          }
-        ],
-        "fingerprint": {
-          "tagName": "select",
-          "attrs": {
-            "name": "ctl_07"
-          }
-        }
-      },
-      "risk": "safe",
-      "onCondition": []
-    },
-    {
-      "id": "s09",
-      "intent": "Create the sub-account — IRREVERSIBLE: this opens a real account on the member's record",
-      "action": {
-        "kind": "click"
-      },
-      "target": {
-        "framePath": [
-          "content"
-        ],
-        "candidates": [
-          {
-            "by": "role-name",
-            "role": "button",
-            "name": "Create Account",
-            "nameIsSubstring": false
-          },
-          {
-            "by": "role-name",
-            "role": "button",
-            "name": "Create",
-            "nameIsSubstring": true
-          }
-        ],
-        "fingerprint": {
-          "tagName": "input",
-          "inputType": "submit",
-          "attrs": {
-            "type": "submit"
-          }
-        }
-      },
-      "risk": "irreversible",
-      "waitFor": {
-        "kind": "text-present",
-        "text": "Sub-Account Created",
-        "framePath": [
-          "content"
-        ],
-        "timeoutMs": 10000,
-        "description": "the confirmation screen is displayed after account creation"
-      },
-      "onCondition": []
-    },
-    {
-      "id": "s10",
-      "intent": "Read the new account number from the confirmation screen",
+      "intent": "Read the S1 savings current balance from the Share Accounts panel",
       "action": {
         "kind": "extract",
-        "outputName": "newAccountNumber",
-        "from": "text"
+        "outputName": "savingsBalance",
+        "from": "text",
+        "pattern": "\\$([\\d,]+\\.\\d{2})"
       },
       "target": {
         "framePath": [
@@ -658,13 +538,13 @@
         "candidates": [
           {
             "by": "label-proximity",
-            "labelText": "New Account Number",
+            "labelText": "Savings (S1) Current Balance",
             "direction": "right",
             "index": 0
           },
           {
             "by": "anchor-relative",
-            "anchorText": "New Account Number",
+            "anchorText": "Savings (S1) Current Balance",
             "role": "text",
             "offset": 0
           }
@@ -676,18 +556,17 @@
   ],
   "checkpoint": {
     "kind": "text-present",
-    "text": "Sub-Account Created",
+    "text": "Savings (S1) Current Balance",
     "framePath": [
       "content"
     ],
     "timeoutMs": 15000,
-    "description": "the confirmation screen for the newly created sub-account is displayed in the content frame"
+    "description": "the Member Detail screen showing the S1 savings balance is displayed in the content frame"
   },
   "provenance": {
     "model": "hand-authored-fixture",
-    "runId": "fixture-0002",
+    "runId": "fixture-0001",
     "discoveredAt": "2026-08-13T00:00:00.000Z",
-    "transcriptDigest": "0000000000000000",
-    "contentHash": "sha256:8e7bf3bd49acd0871d3b75bd248239f7"
+    "transcriptDigest": "0000000000000000"
   }
 }

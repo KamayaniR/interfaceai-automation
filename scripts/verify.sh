@@ -97,6 +97,28 @@ else
 fi
 
 echo
+echo "── artifact integrity ──────────────────────────────────────"
+CAPFILE=artifacts/member.read-savings-balance/v1.json
+cp "$CAPFILE" /tmp/verify-artifact-backup.json
+python3 -c "
+import json;p='$CAPFILE';d=json.load(open(p))
+d['steps'][4]['action']['value']='999999'
+json.dump(d,open(p,'w'),indent=2)"
+OUT=$(npx tsx --env-file-if-exists=.env src/cli.ts replay --capability $CAP --input memberId=100442 2>&1)
+cp /tmp/verify-artifact-backup.json "$CAPFILE"
+if grep -q "does not match its recorded hash" <<<"$OUT"; then
+  ok "a tampered artifact is refused before the browser launches"
+else
+  bad "tampered artifact refused" "content hash mismatch" "$(grep -E '^STATUS|^CLASS' <<<"$OUT" | tr '\n' ' ')"
+fi
+
+if npx tsx --env-file-if-exists=.env src/cli.ts catalog review $CAP 2>&1 | grep -q "content hash verified"; then
+  ok "the review projection renders and verifies integrity"
+else
+  bad "review projection" "renders with verified hash" "see: npm run catalog -- review $CAP"
+fi
+
+echo
 echo "── evidence integrity ──────────────────────────────────────"
 MISMATCH=0
 for d in evidence/replay/*/; do

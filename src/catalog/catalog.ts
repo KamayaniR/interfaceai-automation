@@ -43,20 +43,24 @@ export interface CapabilityToolDef {
 export class Catalog {
   constructor(private readonly artifactsDir: string) {}
 
-  /** Load every capability at its highest version. */
+  /**
+   * Every capability, at the version that would actually run.
+   *
+   * Delegates to `get()` rather than picking the highest version, and that consistency
+   * is not cosmetic: listing v2 while `get()` resolves v1 means the catalog advertises
+   * one contract to a calling agent and executes a different one. A router reading the
+   * advertised tool definition would extract the wrong arguments — which is exactly
+   * what happened the first time this ran.
+   */
   list(): CapabilityArtifact[] {
     if (!existsSync(this.artifactsDir)) return [];
     const out: CapabilityArtifact[] = [];
 
     for (const capDir of readdirSync(this.artifactsDir, { withFileTypes: true })) {
       if (!capDir.isDirectory()) continue;
-      const dir = join(this.artifactsDir, capDir.name);
-      const versions = readdirSync(dir)
-        .filter((f) => /^v\d+\.json$/.test(f))
-        .sort((a, b) => Number(b.slice(1, -5)) - Number(a.slice(1, -5)));
-      if (!versions.length) continue;
       try {
-        out.push(parseArtifact(JSON.parse(readFileSync(join(dir, versions[0]!), 'utf8'))));
+        const artifact = this.get(capDir.name);
+        if (artifact) out.push(artifact);
       } catch {
         // A malformed artifact must not take the whole catalog down. It simply isn't
         // offered — an agent cannot invoke what the catalog won't vouch for.

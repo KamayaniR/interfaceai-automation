@@ -1,0 +1,41 @@
+{
+  "name": "member_read-savings-balance",
+  "description": "Look up a member by their 6-digit member number in CoreVue and return the current balance of their S1 savings share account.\n\nMay return these business outcomes instead of a result: MEMBER_NOT_FOUND (No member record exists with that member number. This is a legitimate answer, not a failure.); MEMBER_NUMBER_INVALID (The member number was rejected by the application's own validation.); ACCESS_DENIED (The operator's role is not authorised to view this member record.).",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "memberId": {
+        "type": "string",
+        "description": "The member's 6-digit CoreVue member number. (pii — redacted in all logs)",
+        "pattern": "^\\d{6}$"
+      }
+    },
+    "required": [
+      "memberId"
+    ],
+    "additionalProperties": false
+  },
+  "_meta": {
+    "version": 1,
+    "status": "approved",
+    "app": "meridian-systems/corevue",
+    "returns": {
+      "savingsBalance": "money — Current balance of the S1 savings share account, without the currency symbol."
+    },
+    "outcomes": [
+      {
+        "code": "MEMBER_NOT_FOUND",
+        "description": "No member record exists with that member number. This is a legitimate answer, not a failure."
+      },
+      {
+        "code": "MEMBER_NUMBER_INVALID",
+        "description": "The member number was rejected by the application's own validation."
+      },
+      {
+        "code": "ACCESS_DENIED",
+        "description": "The operator's role is not authorised to view this member record."
+      }
+    ],
+    "invocable": true
+  }
+}

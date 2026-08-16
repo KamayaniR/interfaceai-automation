@@ -575,6 +575,7 @@
     "model": "hand-authored-fixture",
     "runId": "fixture-0001",
     "discoveredAt": "2026-08-13T00:00:00.000Z",
-    "transcriptDigest": "0000000000000000"
+    "transcriptDigest": "0000000000000000",
+    "contentHash": "sha256:47e6500e15b6310f6769932c7b2ada03"
   }
 }

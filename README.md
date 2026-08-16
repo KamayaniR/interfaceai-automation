@@ -150,14 +150,49 @@ HUMAN    1 intervention(s):
 Note `100442-S3` — the operator changed the account type mid-flow and the automation
 finished on that same session. It is not a fresh context.
 
-### 5. The capability catalog
+### 5. Ask in plain language — the agent-facing path
 
-What a calling AI agent would be handed:
+This is how an AI agent actually reaches the system. A goal arrives, the catalog is
+consulted, and an **existing** capability is replayed. Discovery is the fallback, not
+the default — replay is ~800ms and free; discovery is minutes and costs money.
 
 ```bash
-npm run catalog                                        # list
-npm run catalog -- show member.read-savings-balance    # full JSON tool definition
+npm run ask -- "what is the savings balance for member 100443?"
 ```
+
+```
+ROUTE    invoke
+INVOKE   member.read-savings-balance v1
+INPUTS   {"memberId":"100443"}
+STATUS   success
+OUTPUTS  { "savingsBalance": "17,420.00" }
+```
+
+It refuses to guess:
+
+```bash
+npm run ask -- "look up the savings balance for Rosa"
+#   ROUTE clarify → "What is Rosa's 6-digit CoreVue member number?"
+
+npm run ask -- "export last month's wire transfer audit log as a csv"
+#   ROUTE discover → nothing matches; offers to record a new capability
+```
+
+The router is a *client* of the catalog, not part of the system — see REPORT §1. It
+cannot invoke a draft, supply inputs that fail their declared pattern, or widen what an
+action may do; those gates live elsewhere and it cannot overrule them.
+
+### 6. The capability catalog — two projections of one artifact
+
+```bash
+npm run catalog                                          # list
+npm run catalog -- review member.read-savings-balance    # the HUMAN projection
+npm run catalog -- show   member.read-savings-balance    # the AGENT tool definition
+```
+
+`review` is what an approver should read before promoting a draft: what it takes, what
+it returns, every step in plain language, what it verifies, its failure model, and
+whether it does anything irreversible. `show` is the typed contract an agent calls.
 
 ### Verify the whole thing yourself
 
@@ -170,7 +205,7 @@ each, so you get PASS/FAIL rather than output to read. It starts and stops the t
 itself and needs no API key. 14 checks, ~40s.
 
 ```bash
-npm test          # 35 unit tests
+npm test          # 47 unit tests
 npm run typecheck
 ```
 
