@@ -1,0 +1,286 @@
+/**
+ * The dashboard: catalog browser, chat, and live intervention alerts.
+ *
+ * The one architectural constraint, because it is easy to get wrong and expensive to
+ * discover late:
+ *
+ *   Replay BLOCKS when it escalates. It is sitting inside `waitForResolution()`,
+ *   holding a live browser session — cookies, half-filled form, mid-flow page.
+ *
+ * So the dashboard watches the **intervention queue** and resolves through it. It never
+ * calls "resume" on the engine, because there is nothing to call. A request/response
+ * shape there would force the live session to be reconstructed on resume, which loses
+ * the exact property §3.6 requires: the human operates the SAME session the automation
+ * was using.
+ *
+ *     Replay ──escalate──▶ Queue ◀──SSE── Dashboard ──▶ browser notification
+ *        │ (blocked)         ▲                              │
+ *        └──resolved─────────┴──────── operator decides ─────┘
+ *
+ * This is a client of the system, like the router — it consumes the catalog and the
+ * queue, and holds no automation logic of its own.
+ */
+
+import express from 'express';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+
+import { Catalog } from '../catalog/catalog.ts';
+import { renderForReview } from '../catalog/review.ts';
+import { loadReport } from '../stability/stability.ts';
+import { InterventionQueue } from '../escalation/broker.ts';
+import { SessionStore } from './sessions.ts';
+import { proposeRoute, applyGuardrails } from '../orchestrator/router.ts';
+import { ReplayEngine } from '../replay/engine.ts';
+import { verifyContentHash } from '../schema/hash.ts';
+
+const PORT = Number(process.env.DASHBOARD_PORT ?? 3300);
+const ARTIFACTS_DIR = process.env.ARTIFACTS_DIR ?? 'artifacts';
+const RUNS_DIR = process.env.RUNS_DIR ?? 'runs';
+const INTERVENTIONS_DIR = process.env.INTERVENTIONS_DIR ?? 'runs/interventions';
+const STABILITY_DIR = process.env.STABILITY_DIR ?? 'stability';
+const SESSIONS_DIR = process.env.SESSIONS_DIR ?? 'sessions';
+const POLICY_PATH = process.env.POLICY_PATH ?? 'policy.yaml';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const app = express();
+const catalog = new Catalog(ARTIFACTS_DIR, STABILITY_DIR);
+const queue = new InterventionQueue(INTERVENTIONS_DIR);
+const sessions = new SessionStore(SESSIONS_DIR);
+
+app.use(express.json());
+app.use(express.static(join(here, 'public')));
+
+// ---------------------------------------------------------------------------
+// Catalog
+// ---------------------------------------------------------------------------
+
+app.get('/api/capabilities', (_req, res) => {
+  res.json(
+    catalog.list().map((a) => ({
+      id: a.capability.id,
+      name: a.capability.name,
+      version: a.capability.version,
+      status: a.capability.status,
+      description: a.capability.description,
+      app: `${a.app.vendor}/${a.app.appId}`,
+      inputs: Object.keys(a.inputs),
+      outputs: Object.keys(a.outputs),
+      outcomes: a.outcomes.map((o) => o.code),
+      irreversible: a.steps.some((s) => s.risk === 'irreversible'),
+      stability: loadReport(STABILITY_DIR, a.capability.id, a.capability.version)?.verdict ?? null,
+      versions: allVersions(a.capability.id),
+    })),
+  );
+});
+
+function allVersions(id: string): number[] {
+  const dir = join(ARTIFACTS_DIR, id);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((f) => /^v\d+\.json$/.test(f))
+    .map((f) => Number(f.slice(1, -5)))
+    .sort((a, b) => a - b);
+}
+
+app.get('/api/capabilities/:id', (req, res) => {
+  const version = req.query.version ? Number(req.query.version) : undefined;
+  const artifact = catalog.get(req.params.id, version);
+  if (!artifact) return res.status(404).json({ error: 'no such capability' });
+
+  res.json({
+    artifact,
+    // All three projections of the same source, so the UI never re-derives any of them.
+    review: renderForReview(artifact),
+    toolDef: catalog.toToolDef(artifact),
+    integrity: verifyContentHash(artifact),
+    stability: loadReport(STABILITY_DIR, artifact.capability.id, artifact.capability.version),
+    versions: allVersions(req.params.id),
+    runs: runsFor(artifact.capability.id),
+  });
+});
+
+/** Past runs of a capability, newest first — read straight from the run logs. */
+function runsFor(capabilityId: string): unknown[] {
+  if (!existsSync(RUNS_DIR)) return [];
+  return readdirSync(RUNS_DIR)
+    .filter((d) => d.startsWith('replay-'))
+    .map((d) => join(RUNS_DIR, d, 'result.json'))
+    .filter((p) => existsSync(p))
+    .map((p) => {
+      try {
+        const r = JSON.parse(readFileSync(p, 'utf8'));
+        return { ...r, _mtime: statSync(p).mtimeMs };
+      } catch {
+        return null;
+      }
+    })
+    .filter((r): r is Record<string, unknown> => !!r && r.capabilityId === capabilityId)
+    .sort((a, b) => (b._mtime as number) - (a._mtime as number))
+    .slice(0, 20);
+}
+
+// ---------------------------------------------------------------------------
+// Sessions and chat
+// ---------------------------------------------------------------------------
+
+app.get('/api/sessions', (_req, res) => res.json(sessions.list()));
+app.post('/api/sessions', (_req, res) => res.json({ id: sessions.create() }));
+app.get('/api/sessions/:id', (req, res) => res.json(sessions.messages(req.params.id)));
+
+/**
+ * The chat turn. Routes the goal, then either runs it, asks a question, or offers
+ * discovery — and records every one of those as a message, so the history explains
+ * itself later.
+ */
+app.post('/api/sessions/:id/messages', async (req, res) => {
+  const sessionId = req.params.id;
+  const goal = String(req.body.content ?? '').trim();
+  if (!goal) return res.status(400).json({ error: 'empty message' });
+
+  sessions.append(sessionId, 'user', goal);
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    const m = sessions.append(sessionId, 'system', 'ANTHROPIC_API_KEY is not set — the router needs a model to match goals to capabilities.');
+    return res.json([m]);
+  }
+
+  const emitted: unknown[] = [];
+  try {
+    const proposed = await proposeRoute(goal, catalog.toolDefs());
+    const route = applyGuardrails(proposed, catalog, goal);
+
+    if (route.action === 'clarify') {
+      emitted.push(sessions.append(sessionId, 'assistant', route.question));
+      return res.json(emitted);
+    }
+    if (route.action === 'refuse') {
+      emitted.push(sessions.append(sessionId, 'assistant', route.reason));
+      return res.json(emitted);
+    }
+    if (route.action === 'discover') {
+      emitted.push(
+        sessions.append(
+          sessionId,
+          'assistant',
+          `Nothing in the catalog does this. ${route.reason}\n\nTo record a new capability:\n    npm run discover -- --goal "${goal}"`,
+        ),
+      );
+      return res.json(emitted);
+    }
+
+    // Say what is about to run BEFORE running it — a replay can pause for minutes on
+    // an escalation, and a silent UI during that is indistinguishable from a hang.
+    emitted.push(
+      sessions.append(
+        sessionId,
+        'assistant',
+        `Using ${route.artifact.capability.id} v${route.artifact.capability.version} — ${route.reason}`,
+        { capabilityId: route.artifact.capability.id, capabilityVersion: route.artifact.capability.version },
+      ),
+    );
+
+    const engine = new ReplayEngine({
+      artifact: route.artifact,
+      inputs: route.inputs,
+      policyPath: POLICY_PATH,
+      headed: true, // an escalation hands this window to a human
+      runsDir: RUNS_DIR,
+      interventionsDir: INTERVENTIONS_DIR,
+      escalationTimeoutMs: 600_000,
+    });
+
+    const result = await engine.run();
+    const summary =
+      result.status === 'success'
+        ? `Done. ${JSON.stringify(result.outputs)}`
+        : result.status === 'business_outcome'
+        ? `${result.outcome.code} — ${result.outcome.message}`
+        : `Failed (${result.failure.class}): ${result.failure.message}`;
+
+    emitted.push(
+      sessions.append(sessionId, 'assistant', summary, {
+        runId: result.runId,
+        capabilityId: result.capabilityId,
+        capabilityVersion: result.capabilityVersion,
+        status: result.status,
+        outcomeCode: result.status === 'business_outcome' ? result.outcome.code : undefined,
+      }),
+    );
+    res.json(emitted);
+  } catch (err) {
+    emitted.push(sessions.append(sessionId, 'system', `Error: ${(err as Error).message}`));
+    res.json(emitted);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Interventions — watched, never driven
+// ---------------------------------------------------------------------------
+
+app.get('/api/interventions', (_req, res) => res.json(queue.list()));
+
+app.post('/api/interventions/:id/resolve', (req, res) => {
+  const r = queue.get(req.params.id);
+  if (!r) return res.status(404).json({ error: 'no such intervention' });
+
+  const action = req.body.action === 'abort' ? 'abort' : 'resume';
+  r.status = action === 'abort' ? 'aborted' : 'resolved';
+  r.resolution = {
+    operator: process.env.OPERATOR_NAME ?? 'dashboard-operator',
+    action,
+    note: String(req.body.note ?? ''),
+    tookControlAt: r.createdAt,
+    returnedControlAt: new Date().toISOString(),
+    recordedActions: [],
+  };
+  // Writing this is the ONLY thing that unblocks the engine. The dashboard does not
+  // — and cannot — call resume directly.
+  queue.update(r);
+  res.json({ ok: true });
+});
+
+app.get('/api/interventions/:id/screenshot', (req, res) => {
+  const r = queue.get(req.params.id);
+  if (!r?.screenshotPath || !existsSync(r.screenshotPath)) return res.status(404).end();
+  res.type('png').send(readFileSync(r.screenshotPath));
+});
+
+/**
+ * Server-sent events over the queue. Polled server-side rather than watched with
+ * fs.watch: the queue is a directory two processes write to, and fs.watch semantics
+ * differ per platform. A 1s poll is unmeasurable next to a browser session sitting idle
+ * waiting for a human.
+ */
+app.get('/api/events', (req, res) => {
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  });
+  res.flushHeaders();
+
+  let announced = new Set<string>();
+  const tick = () => {
+    const open = queue.list().filter((r) => r.status === 'open' || r.status === 'in_progress');
+    for (const r of open) {
+      if (announced.has(r.id)) continue;
+      announced.add(r.id);
+      res.write(`event: intervention\ndata: ${JSON.stringify(r)}\n\n`);
+    }
+    // Forget resolved ones so a genuinely new request for the same run re-announces.
+    announced = new Set([...announced].filter((id) => open.some((r) => r.id === id)));
+    res.write(`event: ping\ndata: {"open":${open.length}}\n\n`);
+  };
+
+  tick();
+  const timer = setInterval(tick, 1000);
+  req.on('close', () => clearInterval(timer));
+});
+
+app.listen(PORT, () => {
+  console.log(`Dashboard on http://localhost:${PORT}`);
+  console.log(`  catalog: ${ARTIFACTS_DIR}  ·  sessions: ${SESSIONS_DIR}  ·  queue: ${INTERVENTIONS_DIR}`);
+});

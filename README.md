@@ -242,6 +242,13 @@ npm test          # 54 unit tests
 npm run typecheck
 ```
 
+## Dashboard (branch only)
+
+A catalog browser, chat with history, and live intervention alerts live on
+`feature/dashboard`, not here — see `src/dashboard/README.md` on that branch. It is the
+agent-facing product built on top of this system, which is the boundary REPORT §1 argues
+for. The submitted state is tagged `submission-v1`.
+
 ## Layout
 
 | Path | What it is |
