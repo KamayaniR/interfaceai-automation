@@ -33,6 +33,14 @@ export interface WebSurfaceOptions {
   onEvent?: (event: { type: string; detail: Record<string, unknown> }) => void;
   /** CDP port for operator attachment when headed. */
   cdpPort?: number;
+  /**
+   * Receives JPEG frames (base64) from the live page. Set by a viewer that wants to
+   * watch the actual session rather than a copy of the app — the distinction matters,
+   * because a second browser pointed at the same URL is a different session with
+   * different cookies, and during an escalation that would mislead an operator into
+   * thinking they were driving the run.
+   */
+  onFrame?: (frame: string) => void;
 }
 
 /** Blocked by policy, as opposed to failing for an app reason. */
@@ -76,6 +84,7 @@ export class WebSurface implements Surface {
     s.context = await s.browser.newContext({ viewport: { width: 1280, height: 900 } });
     s.page = await s.context.newPage();
     await s.installHumanActionRecorder();
+    if (opts.onFrame) await s.startScreencast(opts.onFrame);
     return s;
   }
 
@@ -119,6 +128,34 @@ export class WebSurface implements Surface {
     });
 
     await this.context.addInitScript({ content: HUMAN_ACTION_RECORDER });
+  }
+
+  /**
+   * Stream the live page over CDP.
+   *
+   * Read-only by design. Watching is safe; acting is not, because the control token
+   * says who may act and a viewer that could click would route around it. Taking over
+   * still means driving the headed window, which is the same session either way.
+   */
+  private async startScreencast(onFrame: (frame: string) => void): Promise<void> {
+    try {
+      const cdp = await this.context.newCDPSession(this.page);
+      await cdp.send('Page.enable');
+      cdp.on('Page.screencastFrame', async (f: { data: string; sessionId: number }) => {
+        onFrame(f.data);
+        // Must ack or Chrome stops sending.
+        await cdp.send('Page.screencastFrameAck', { sessionId: f.sessionId }).catch(() => {});
+      });
+      await cdp.send('Page.startScreencast', {
+        format: 'jpeg',
+        quality: 55,
+        maxWidth: 900,
+        maxHeight: 700,
+        everyNthFrame: 1,
+      });
+    } catch {
+      // A viewer is a convenience. If the screencast can't start, the run continues.
+    }
   }
 
   // -------------------------------------------------------------------------

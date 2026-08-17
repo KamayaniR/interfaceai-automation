@@ -329,6 +329,35 @@ async function resolve(action) {
   current = null;
 }
 
+// ---------------------------------------------------------------------------
+// Live session view
+// ---------------------------------------------------------------------------
+
+const screen = new EventSource('/api/screen');
+let liveImg = null;
+
+screen.addEventListener('frame', (e) => {
+  if (!liveImg) {
+    $('#liveBody').innerHTML = '';
+    liveImg = el('img');
+    $('#liveBody').append(liveImg);
+  }
+  liveImg.src = `data:image/jpeg;base64,${e.data}`;
+});
+
+screen.addEventListener('run', (e) => {
+  const run = JSON.parse(e.data);
+  if (run) {
+    $('#liveDot').classList.add('on');
+    $('#liveLabel').textContent = `CoreVue — live · ${run.capabilityId}`;
+  } else {
+    $('#liveDot').classList.remove('on');
+    // Keep the last frame rather than blanking: after a run you usually want to see
+    // where it ended up, and an empty pane throws that away.
+    $('#liveLabel').textContent = 'CoreVue — run finished (last frame)';
+  }
+});
+
 const events = new EventSource('/api/events');
 events.addEventListener('intervention', (e) => {
   const r = JSON.parse(e.data);

@@ -34,6 +34,22 @@ clarifying question works: *"look up the savings balance for Rosa"* → *"What i
 number from three topics back must not become a plausible answer to a new question — and
 values recovered from history face the same `ParamSpec` validation as freshly typed ones.
 
+**Live view of CoreVue, side by side with the chat.** While a capability runs, the right
+pane streams frames from the automation's *own* browser session over CDP — you watch it
+sign on, type the member number and read the balance, next to the conversation that asked
+for it.
+
+Deliberately **not** an iframe of `localhost:3100`. A second browser pointed at the same
+URL is a different session with different cookies and no sign-on, so it would show
+something that looks like the run and isn't. During an escalation that would mislead an
+operator into thinking they were driving the automation when they were not — the same
+class of error as calling `resume` on the engine. What you see here *is* the session.
+
+The view is read-only: watching is safe, acting is not, because the control token decides
+who may act and a clickable viewer would route around it. Taking over still means driving
+the headed window — the same session either way. Full co-browsing (forwarding input back
+over CDP) is what the brief scopes out.
+
 **Live intervention alerts.** When a run escalates, an SSE event drives a modal and a
 browser notification (works with the tab backgrounded).
 

@@ -50,6 +50,60 @@ const catalog = new Catalog(ARTIFACTS_DIR, STABILITY_DIR);
 const queue = new InterventionQueue(INTERVENTIONS_DIR);
 const sessions = new SessionStore(SESSIONS_DIR);
 
+/**
+ * The most recent frame from whichever run is live, plus who is watching.
+ *
+ * One slot rather than a buffer: a viewer wants "what is on screen now", and a queue of
+ * stale frames is worse than none. Held in memory because it is worthless the moment the
+ * run ends — this is a window, not a record. The record is the run log.
+ */
+let liveFrame: string | null = null;
+let liveRun: { runId: string; capabilityId: string } | null = null;
+const watchers = new Set<import('express').Response>();
+
+function pushFrame(frame: string): void {
+  liveFrame = frame;
+  for (const w of watchers) {
+    try {
+      w.write(`event: frame\ndata: ${frame}\n\n`);
+    } catch {
+      watchers.delete(w);
+    }
+  }
+}
+
+function announceRun(run: typeof liveRun): void {
+  liveRun = run;
+  for (const w of watchers) {
+    try {
+      w.write(`event: run\ndata: ${JSON.stringify(run)}\n\n`);
+    } catch {
+      watchers.delete(w);
+    }
+  }
+}
+
+/**
+ * Live view of the automation's actual session.
+ *
+ * Deliberately NOT an iframe of the target app: a second browser pointed at the same URL
+ * is a different session with different cookies, and during an escalation that would
+ * show an operator something that looks like the run but isn't. These frames come out of
+ * the very page the engine is driving.
+ */
+app.get('/api/screen', (req, res) => {
+  res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
+  res.flushHeaders();
+  watchers.add(res);
+  if (liveRun) res.write(`event: run\ndata: ${JSON.stringify(liveRun)}\n\n`);
+  if (liveFrame) res.write(`event: frame\ndata: ${liveFrame}\n\n`);
+  const keepalive = setInterval(() => res.write(': ping\n\n'), 15000);
+  req.on('close', () => {
+    clearInterval(keepalive);
+    watchers.delete(res);
+  });
+});
+
 app.use(express.json());
 app.use(express.static(join(here, 'public')));
 
@@ -239,9 +293,12 @@ app.post('/api/sessions/:id/messages', async (req, res) => {
       runsDir: RUNS_DIR,
       interventionsDir: INTERVENTIONS_DIR,
       escalationTimeoutMs: 600_000,
+      onFrame: pushFrame,
     });
 
+    announceRun({ runId: 'starting', capabilityId: route.artifact.capability.id });
     const result = await engine.run();
+    announceRun(null);
     const summary =
       result.status === 'success'
         ? `Done. ${JSON.stringify(result.outputs)}`

@@ -53,6 +53,8 @@ export interface ReplayOptions {
   escalationTimeoutMs: number;
   /** Appended to every target-app URL, to reproduce a runtime condition on demand. */
   faultParam?: string;
+  /** Optional live-frame sink, for a viewer watching this exact session. */
+  onFrame?: (frame: string) => void;
 }
 
 /** Thrown internally to unwind to the top-level result builder. */
@@ -106,6 +108,7 @@ export class ReplayEngine {
         policy,
         control: this.control,
         onEvent: (e) => this.logger.log(e.type, e.detail),
+        onFrame: this.opts.onFrame,
       });
 
       await this.checkPreconditions();
