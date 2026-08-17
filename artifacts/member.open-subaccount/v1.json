@@ -345,6 +345,7 @@
           },
           "then": {
             "then": "recover",
+            "maxAttempts": 2,
             "recovery": [
               {
                 "id": "r01",
@@ -467,8 +468,7 @@
                 "risk": "safe",
                 "onCondition": []
               }
-            ],
-            "maxAttempts": 2
+            ]
           }
         },
         {
@@ -483,6 +483,7 @@
           },
           "then": {
             "then": "recover",
+            "maxAttempts": 2,
             "recovery": [
               {
                 "id": "r10",
@@ -512,8 +513,7 @@
                 "risk": "safe",
                 "onCondition": []
               }
-            ],
-            "maxAttempts": 2
+            ]
           }
         }
       ]
