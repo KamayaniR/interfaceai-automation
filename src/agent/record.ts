@@ -35,6 +35,7 @@ import type {
 import type { ObservedElement } from '../surface/surface.ts';
 import { synthesiseTarget } from '../surface/web/resolve-target.ts';
 import { classifyRisk } from '../policy/risk.ts';
+import { computeContentHash } from '../schema/hash.ts';
 
 /** One action that succeeded during discovery, with the element it touched. */
 export interface RecordedAction {
@@ -95,15 +96,45 @@ function parameterise(value: string, inputs: FinishContract['inputs']): string {
 }
 
 /**
- * Pick a per-step checkpoint from what the page showed after the action.
+ * Pick a per-step checkpoint from what actually changed on screen.
  *
- * Heuristic and deliberately modest: we prefer a URL assertion, because in a
- * server-rendered app the URL is the most reliable signal that a navigation actually
- * happened, and a URL is not PII. Where the URL didn't change we fall back to asserting
- * the element we are about to use next still exists — which the engine gets for free
- * from target resolution anyway.
+ * The obvious choice — assert the URL — is worthless here, and that is a lesson about
+ * the target rather than a shortcut. In a frameset the page URL never changes: every
+ * navigation happens inside a child frame, so `resultingUrl` stays `http://host/` for
+ * the whole flow. Recording it produced `url-matches "/"` on every step: a checkpoint
+ * that matches any page and can never fail, which is worse than no checkpoint because
+ * it looks like verification.
+ *
+ * So instead we assert what the action CAUSED: a line of text that appeared on screen
+ * after it and was not there before. That is the definition of "did this step do
+ * something", it survives the frameset problem entirely, and it degrades honestly — if
+ * nothing changed, no checkpoint is emitted rather than a vacuous one.
+ *
+ * KNOWN LIMITATION. This still under-covers. Steps that only type into a field correctly
+ * get nothing (typing changes no page text), but a click that navigates sometimes gets
+ * nothing either, because `resultingText` is every frame's text joined into one blob and
+ * the diff against the previous step can come up empty. The hand-authored artifacts do
+ * not have this problem because their checkpoints are scoped with
+ * `framePath: ['content']` — they assert against the content frame alone.
+ *
+ * The real fix is to carry per-frame text through `RecordedAction` instead of a joined
+ * string, and emit `framePath`-scoped checkpoints to match. That is a change to the
+ * discovery loop's recording shape, not to this function, and it is written up in
+ * REPORT §7 rather than half-done here.
  */
-function checkpointFor(action: RecordedAction, isLast: boolean, successText: string): Checkpoint | undefined {
+function checkpointFor(
+  action: RecordedAction,
+  previousText: string,
+  /**
+   * Text from the first screen of the flow. Anything present there is chrome — the nav
+   * bar, the product name, the frameset furniture — and it is on every subsequent screen
+   * too, so a checkpoint built from it asserts nothing. Excluding it is what stops
+   * "MERIDIAN CU | CoreVue 7.2" from being chosen as proof that we reached Member Detail.
+   */
+  chromeText: string,
+  isLast: boolean,
+  successText: string,
+): Checkpoint | undefined {
   if (action.kind === 'extract') return undefined;
 
   if (isLast) {
@@ -116,17 +147,46 @@ function checkpointFor(action: RecordedAction, isLast: boolean, successText: str
     };
   }
 
-  try {
-    const path = new URL(action.resultingUrl).pathname;
-    return {
-      kind: 'url-matches',
-      pattern: `${path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
-      timeoutMs: 10_000,
-      description: `the browser reaches ${path} after "${action.intent}"`,
-    };
-  } catch {
-    return undefined;
-  }
+  const before = new Set([
+    ...previousText.split('\n').map((l) => l.trim()),
+    ...chromeText.split('\n').map((l) => l.trim()),
+  ]);
+  const appeared = action.resultingText
+    .split('\n')
+    .map((l) => l.trim())
+    // Long enough to be distinctive, short enough to be a label rather than a paragraph,
+    // and never a bare number — those are balances and member ids, i.e. the data.
+    .filter((l) => l.length >= 8 && l.length <= 60 && !/^[\d.,$\s-]+$/.test(l))
+    .find((l) => !before.has(l));
+
+  // Nothing new appeared. For a step that only fills a field that is correct — typing
+  // changes no page text, and inventing an assertion would be dishonest. But a CLICK
+  // that reached a new screen must be verifiable, and "new vs. the previous step" can
+  // miss it if the observation raced the navigation. Fall back to asserting something
+  // distinctive that is on screen NOW: weaker than "this appeared", still a real check,
+  // and vastly better than leaving the step that navigates unverified.
+  const assertion =
+    appeared ??
+    (action.kind === 'click'
+      ? action.resultingText
+          .split('\n')
+          .map((l) => l.trim())
+          .filter((l) => l.length >= 8 && l.length <= 60 && !/^[\d.,$\s-]+$/.test(l))
+          .filter((l) => !before.has(l)) // never fall back onto chrome either
+          .sort((a, b) => b.length - a.length)[0]
+      : undefined);
+
+  if (!assertion) return undefined;
+
+  return {
+    kind: 'text-present',
+    text: assertion,
+    framePath: [],
+    timeoutMs: 10_000,
+    description: appeared
+      ? `"${assertion}" appears after "${action.intent}"`
+      : `"${assertion}" is on screen after "${action.intent}"`,
+  };
 }
 
 export function recordArtifact(opts: RecordOptions): CapabilityArtifact {
@@ -194,6 +254,8 @@ export function recordArtifact(opts: RecordOptions): CapabilityArtifact {
 
   const steps: StepType[] = actions.map((action, idx) => {
     const isLast = idx === actions.length - 1;
+    const previousText = idx > 0 ? (actions[idx - 1]?.resultingText ?? '') : '';
+    const chromeText = idx === 0 ? '' : (actions.find((a) => a.resultingText)?.resultingText ?? '');
     const target = action.element ? synthesiseTarget(action.element) : undefined;
 
     let built: StepType['action'];
@@ -226,14 +288,14 @@ export function recordArtifact(opts: RecordOptions): CapabilityArtifact {
       action: built,
       target,
       risk: classifyRisk(`${action.element?.name ?? ''} ${action.intent}`, action.kind),
-      waitFor: checkpointFor(action, isLast, contract.success_text),
+      waitFor: checkpointFor(action, previousText, chromeText, isLast, contract.success_text),
       // Outcome rules go on every non-navigate step. Navigation to the entry point
       // cannot itself produce a business outcome.
       onCondition: action.kind === 'navigate' ? [] : outcomeRules,
     };
   });
 
-  return {
+  const artifact: CapabilityArtifact = {
     schemaVersion: '1.0',
     capability: {
       id: contract.capability_id,
@@ -270,4 +332,10 @@ export function recordArtifact(opts: RecordOptions): CapabilityArtifact {
       transcriptDigest: createHash('sha256').update(opts.transcript).digest('hex').slice(0, 16),
     },
   };
+
+  // Stamp the content hash so a discovered artifact is tamper-evident from birth.
+  // Without this, only hand-stamped artifacts were protected — every capability the
+  // system recorded itself silently opted out of the check.
+  artifact.provenance.contentHash = computeContentHash(artifact);
+  return artifact;
 }

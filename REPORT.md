@@ -289,6 +289,15 @@ a human holds the session, so a dashboard must talk to the intervention queue, n
 resume on the engine. A request/response shape there would force the live session to be
 reconstructed, which is the one thing §3.6 forbids.
 
+**Checkpoint derivation is the weakest part of the recorder.** Discovered artifacts get
+per-step checkpoints inferred from what changed on screen, and that under-covers: a click
+that navigates sometimes gets none. The cause is the frameset again — `resultingText`
+joins every frame, so chrome pollutes the diff. The hand-authored artifacts avoid it by
+scoping checkpoints with `framePath: ['content']`. The fix is carrying per-frame text
+through the recorder and emitting frame-scoped checkpoints, which is a change to the
+discovery loop's recording shape rather than a smarter heuristic. Left named rather than
+half-done.
+
 **Next, in order:** (1) a non-recording `probe` action, so discovery can explore failure paths
 without polluting the flow — the highest-value fix, because it is what stands between a
 discovered artifact and a *complete* one; (2) shared sub-flows in the schema; (3) semantic
