@@ -88,6 +88,41 @@ Verified end to end: a chat turn opened a sub-account, blocked at the irreversib
 raised an intervention over SSE, was resolved through the queue, and the same chat turn
 returned `newAccountNumber: "100442-S2"`.
 
+## Route caching — the last model call removed
+
+Replay never calls a model. Routing did: every chat turn paid one model call just to decide
+*which* capability to run, even for a request answered a hundred times before.
+
+The deciding node now checks the catalog first. The key is the **intent**, not the prompt —
+values matching a declared input's `pattern` are replaced by a placeholder before lookup:
+
+```
+"what is the savings balance for member 100442?"
+"what is the savings balance for member 100443?"
+                    ↓  both normalise to
+"what is the savings balance for member {memberId}?"      ← one cache entry
+```
+
+Measured on the running dashboard: **9.44s → 2.60s**, second call model-free, and it
+returned the *other* member's balance — the value is re-extracted per request, never stored.
+
+That is also the privacy property. Member numbers are classified `pii`; a cache full of them
+would be a quiet second copy of exactly what the redactor exists to keep out of files. Only
+the shape is persisted.
+
+Invalidation is structural, not manual. Each entry is stamped with a fingerprint of the
+catalog's resolved state — ids, versions, statuses, input names — and any change drops the
+whole cache. A cached route pointing at a capability since revoked or superseded would be
+wrong on *every* repeat, which is worse than a one-off because it is consistent and silent.
+It fails closed: a miss costs one model call, which is what was being paid anyway.
+
+The cache short-circuits the **proposal**, never the checking. A hit still passes through
+`applyGuardrails`, so a route cached while a capability was approved stops working the moment
+it isn't. The dashboard also skips the cache when the turn has history, because a reply like
+`100442` answering a clarifying question has no intent of its own.
+
+Cached to `routes/cache.json` (gitignored — it is derived, and rebuilds itself).
+
 ## Known gaps
 
 - **No auth.** Anyone reaching the port can resolve an intervention. Real deployment needs

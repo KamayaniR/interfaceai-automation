@@ -33,6 +33,7 @@ import { loadReport } from '../stability/stability.ts';
 import { InterventionQueue } from '../escalation/broker.ts';
 import { SessionStore } from './sessions.ts';
 import { proposeRoute, applyGuardrails, CONTEXT_TURNS } from '../orchestrator/router.ts';
+import { RouteCache, catalogFingerprint } from '../orchestrator/route-cache.ts';
 import { ReplayEngine } from '../replay/engine.ts';
 import { verifyContentHash } from '../schema/hash.ts';
 import { discover } from '../agent/loop.ts';
@@ -45,6 +46,7 @@ const INTERVENTIONS_DIR = process.env.INTERVENTIONS_DIR ?? 'runs/interventions';
 const STABILITY_DIR = process.env.STABILITY_DIR ?? 'stability';
 const SESSIONS_DIR = process.env.SESSIONS_DIR ?? 'sessions';
 const POLICY_PATH = process.env.POLICY_PATH ?? 'policy.yaml';
+const ROUTE_CACHE = process.env.ROUTE_CACHE ?? 'routes/cache.json';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -254,7 +256,15 @@ app.post('/api/sessions/:id/messages', async (req, res) => {
       .slice(-(CONTEXT_TURNS + 1), -1) // exclude the message we just appended
       .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
-    const proposed = await proposeRoute(goal, catalog.toolDefs(), history);
+    const artifacts = catalog.list();
+    const cache = new RouteCache(ROUTE_CACHE, catalogFingerprint(artifacts));
+    // Only consult the cache for a self-contained request. A short reply resolving a
+    // clarifying question ("100442") has no intent of its own — its meaning lives in
+    // the previous turn, so it must go to the model.
+    const cached = history.length === 0 ? cache.lookup(goal, artifacts) : null;
+
+    const proposed = cached ?? (await proposeRoute(goal, catalog.toolDefs(), history));
+    if (!cached) cache.remember(goal, artifacts, proposed);
     const route = applyGuardrails(proposed, catalog, goal);
 
     if (route.action === 'clarify') {

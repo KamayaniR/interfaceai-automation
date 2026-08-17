@@ -13,6 +13,7 @@ import { ReplayEngine } from './replay/engine.ts';
 import { Catalog } from './catalog/catalog.ts';
 import { renderForReview } from './catalog/review.ts';
 import { proposeRoute, applyGuardrails } from './orchestrator/router.ts';
+import { RouteCache, catalogFingerprint } from './orchestrator/route-cache.ts';
 import { measureStability, saveReport, loadReport, promotionAdvice } from './stability/stability.ts';
 import { parseArtifact } from './schema/artifact.ts';
 import type { ReplayResult } from './schema/result.ts';
@@ -22,6 +23,7 @@ const RUNS_DIR = process.env.RUNS_DIR ?? 'runs';
 const INTERVENTIONS_DIR = process.env.INTERVENTIONS_DIR ?? 'runs/interventions';
 const POLICY_PATH = process.env.POLICY_PATH ?? 'policy.yaml';
 const STABILITY_DIR = process.env.STABILITY_DIR ?? 'stability';
+const ROUTE_CACHE = process.env.ROUTE_CACHE ?? 'routes/cache.json';
 
 function arg(name: string, fallback?: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -229,8 +231,18 @@ async function cmdAsk(): Promise<void> {
   console.log(`\nGOAL     ${goal}`);
   console.log(`CATALOG  ${defs.length} capability(s) available\n`);
 
-  const proposed = await proposeRoute(goal, defs);
+  // Try the cache before the model. A hit still passes through applyGuardrails —
+  // this short-circuits the PROPOSAL, never the checking, so a route cached while a
+  // capability was approved stops working the moment it isn't.
+  const artifacts = catalog.list();
+  const cache = new RouteCache(ROUTE_CACHE, catalogFingerprint(artifacts));
+  const cached = cache.lookup(goal, artifacts);
+
+  const proposed = cached ?? (await proposeRoute(goal, defs));
+  console.log(`SOURCE   ${cached ? 'cache (no model call)' : 'model'}`);
+
   const route = applyGuardrails(proposed, catalog, goal);
+  if (!cached) cache.remember(goal, artifacts, proposed);
 
   console.log(`ROUTE    ${route.action}`);
   console.log(`REASON   ${route.reason}`);

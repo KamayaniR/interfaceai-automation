@@ -7,3 +7,6 @@ runs/
 # work-in-progress, not part of the submission
 portions/
 sessions/
+
+# Route memoisation — a local cache, rebuilt on demand
+routes/
