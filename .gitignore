@@ -6,3 +6,6 @@ runs/
 
 # work-in-progress, not part of the submission
 portions/
+
+# chat sessions (dashboard branch); never commit conversation history
+sessions/
