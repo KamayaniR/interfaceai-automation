@@ -220,3 +220,59 @@ test('content hash ignores key order and whitespace', async () => {
   const reordered = JSON.parse(JSON.stringify(artifact, Object.keys(artifact).sort()));
   assert.equal(computeContentHash(artifact), computeContentHash({ ...reordered, ...artifact }));
 });
+
+test('a recorded artifact is stamped with its content hash', async () => {
+  // Regression: content addressing was added and existing artifacts were stamped, but
+  // the recorder never was — so every capability the system discovered itself silently
+  // opted out of tamper detection.
+  const { recordArtifact } = await import('../src/agent/record.ts');
+  const { verifyContentHash } = await import('../src/schema/hash.ts');
+
+  const artifact = recordArtifact({
+    actions: [
+      { kind: 'navigate', intent: 'open', url: 'http://x', resultingText: 'Sign On', resultingUrl: 'http://x/' },
+      { kind: 'extract', intent: 'read', outputName: 'v', from: 'text',
+        resultingText: 'Member Detail', resultingUrl: 'http://x/' },
+    ],
+    contract: {
+      capability_id: 'test.hash', name: 'T', description: 'd', inputs: [],
+      outputs: [{ name: 'v', type: 'string', description: 'd', sensitivity: 'public' }],
+      outcomes: [], success_text: 'Member Detail',
+    },
+    goal: 'g', entryUrl: 'http://x', appId: 'a', vendor: 'v', model: 'm', runId: 'r', transcript: '',
+  });
+
+  assert.ok(artifact.provenance.contentHash, 'must be stamped at record time');
+  assert.equal(verifyContentHash(artifact).state, 'match');
+});
+
+test('checkpoints assert what CHANGED, not a frameset URL that never does', async () => {
+  // The page URL is constant in a frameset, so recording it produced url-matches "/" —
+  // a checkpoint matching every page, which is worse than none because it looks like
+  // verification.
+  const { recordArtifact } = await import('../src/agent/record.ts');
+
+  const artifact = recordArtifact({
+    actions: [
+      { kind: 'navigate', intent: 'open', url: 'http://x', resultingText: 'Operator Sign On',
+        resultingUrl: 'http://x/' },
+      { kind: 'click', intent: 'sign on', resultingText: 'Operator Sign On\nMember Lookup Screen',
+        resultingUrl: 'http://x/' },
+      { kind: 'extract', intent: 'read', outputName: 'v', from: 'text',
+        resultingText: 'Member Lookup Screen', resultingUrl: 'http://x/' },
+    ],
+    contract: {
+      capability_id: 'test.cp', name: 'T', description: 'd', inputs: [],
+      outputs: [{ name: 'v', type: 'string', description: 'd', sensitivity: 'public' }],
+      outcomes: [], success_text: 'Member Lookup Screen',
+    },
+    goal: 'g', entryUrl: 'http://x', appId: 'a', vendor: 'v', model: 'm', runId: 'r', transcript: '',
+  });
+
+  for (const step of artifact.steps) {
+    assert.notEqual(step.waitFor?.kind, 'url-matches', 'must not assert a constant frameset URL');
+  }
+  // The click's checkpoint should be the text that appeared because of it.
+  assert.equal(artifact.steps[1]!.waitFor?.kind, 'text-present');
+  assert.match((artifact.steps[1]!.waitFor as { text: string }).text, /Member Lookup Screen/);
+});

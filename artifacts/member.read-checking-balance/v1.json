@@ -4,8 +4,8 @@
     "id": "member.read-checking-balance",
     "version": 1,
     "name": "Read member checking (D1) balance",
-    "description": "Signs on to the CoreVue 7.2 back-office console, looks up a member by member number, and returns the member's name and the current balance of their checking (D1) share account from the Member Detail screen. Read-only: no records are modified.",
-    "status": "approved"
+    "description": "Signs on to the CoreVue back-office console, looks up a member by member number, and reads the Checking (D1) current balance (plus the member name) from the Member Detail screen. Read-only: no records are modified.",
+    "status": "draft"
   },
   "app": {
     "appId": "corevue",
@@ -29,7 +29,7 @@
     },
     "memberNumber": {
       "type": "string",
-      "description": "The credit union member number to look up.",
+      "description": "The member number to look up.",
       "required": true,
       "pattern": "^\\d{6}$",
       "sensitivity": "pii"
@@ -38,19 +38,19 @@
   "outputs": {
     "checkingBalance": {
       "type": "money",
-      "description": "Current balance of the member's checking (D1) share account, in USD without currency symbol.",
+      "description": "Current balance of the member's Checking (D1) share account, without currency symbol.",
       "sensitivity": "pii"
     },
     "memberName": {
       "type": "string",
-      "description": "Member name as shown on the Member Detail screen (LAST, FIRST M).",
+      "description": "Name on the member record, used to confirm the correct record was read.",
       "sensitivity": "pii"
     }
   },
   "outcomes": [
     {
       "code": "MEMBER_NOT_FOUND",
-      "description": "The supplied member number does not match any member record, so no detail screen and no balances are returned.",
+      "description": "No member record exists for the supplied member number, so no balances can be returned.",
       "terminal": true
     }
   ],
@@ -64,12 +64,6 @@
         "url": "http://localhost:3100"
       },
       "risk": "safe",
-      "waitFor": {
-        "kind": "url-matches",
-        "pattern": "/",
-        "timeoutMs": 10000,
-        "description": "the browser reaches / after \"Open the corevue entry point\""
-      },
       "onCondition": []
     },
     {
@@ -119,12 +113,6 @@
         }
       },
       "risk": "safe",
-      "waitFor": {
-        "kind": "url-matches",
-        "pattern": "/",
-        "timeoutMs": 10000,
-        "description": "the browser reaches / after \"Enter the operator ID to sign on to the console\""
-      },
       "onCondition": [
         {
           "when": {
@@ -190,12 +178,6 @@
         }
       },
       "risk": "safe",
-      "waitFor": {
-        "kind": "url-matches",
-        "pattern": "/",
-        "timeoutMs": 10000,
-        "description": "the browser reaches / after \"Enter the operator password to sign on\""
-      },
       "onCondition": [
         {
           "when": {
@@ -259,10 +241,11 @@
       },
       "risk": "safe",
       "waitFor": {
-        "kind": "url-matches",
-        "pattern": "/",
+        "kind": "text-present",
+        "text": "CoreVue 7.2 — Member Lookup Member Lookup Member Number",
+        "framePath": [],
         "timeoutMs": 10000,
-        "description": "the browser reaches / after \"Submit the sign-on form\""
+        "description": "\"CoreVue 7.2 — Member Lookup Member Lookup Member Number\" appears after \"Submit the sign-on form\""
       },
       "onCondition": [
         {
@@ -329,12 +312,6 @@
         }
       },
       "risk": "safe",
-      "waitFor": {
-        "kind": "url-matches",
-        "pattern": "/",
-        "timeoutMs": 10000,
-        "description": "the browser reaches / after \"Enter the member number to look up\""
-      },
       "onCondition": [
         {
           "when": {
@@ -397,12 +374,6 @@
         }
       },
       "risk": "safe",
-      "waitFor": {
-        "kind": "url-matches",
-        "pattern": "/",
-        "timeoutMs": 10000,
-        "description": "the browser reaches / after \"Search for the member record\""
-      },
       "onCondition": [
         {
           "when": {
@@ -423,7 +394,7 @@
     },
     {
       "id": "s07",
-      "intent": "Capture the checking (D1) current balance that was requested",
+      "intent": "Record the checking (D1) current balance that was asked for",
       "action": {
         "kind": "extract",
         "outputName": "checkingBalance",
@@ -474,7 +445,7 @@
     },
     {
       "id": "s08",
-      "intent": "Capture the member name to confirm the record identity",
+      "intent": "Record the member name to confirm the right record was read",
       "action": {
         "kind": "extract",
         "outputName": "memberName",
@@ -532,8 +503,9 @@
   },
   "provenance": {
     "model": "claude-opus-5",
-    "runId": "d282bf30",
-    "discoveredAt": "2026-08-17T01:41:02.889Z",
-    "transcriptDigest": "f4ba6b0597dbf35f"
+    "runId": "7d2842e6",
+    "discoveredAt": "2026-08-17T04:45:52.786Z",
+    "transcriptDigest": "432597895a80d351",
+    "contentHash": "sha256:f8233b9d96132d72c3fb467e44306ac5"
   }
 }
