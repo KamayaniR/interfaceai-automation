@@ -32,7 +32,7 @@ import { renderForReview } from '../catalog/review.ts';
 import { loadReport } from '../stability/stability.ts';
 import { InterventionQueue } from '../escalation/broker.ts';
 import { SessionStore } from './sessions.ts';
-import { proposeRoute, applyGuardrails } from '../orchestrator/router.ts';
+import { proposeRoute, applyGuardrails, CONTEXT_TURNS } from '../orchestrator/router.ts';
 import { ReplayEngine } from '../replay/engine.ts';
 import { verifyContentHash } from '../schema/hash.ts';
 
@@ -189,7 +189,16 @@ app.post('/api/sessions/:id/messages', async (req, res) => {
 
   const emitted: unknown[] = [];
   try {
-    const proposed = await proposeRoute(goal, catalog.toolDefs());
+    // Prior turns, so an answer to a clarifying question resolves against the question.
+    // The guardrails still validate whatever inputs come back — history can inform the
+    // router's reading of the goal, but it can never widen what is allowed.
+    const history = sessions
+      .messages(sessionId)
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .slice(-(CONTEXT_TURNS + 1), -1) // exclude the message we just appended
+      .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+
+    const proposed = await proposeRoute(goal, catalog.toolDefs(), history);
     const route = applyGuardrails(proposed, catalog, goal);
 
     if (route.action === 'clarify') {

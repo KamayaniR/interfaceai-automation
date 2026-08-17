@@ -28,6 +28,12 @@ run. Clicking the run opens the result contract, the step trace, the structured 
 any screenshots — so "why did it do that?" is answerable from the chat rather than by
 grepping `runs/`.
 
+**Conversational follow-ups.** The router sees the last few turns, so answering a
+clarifying question works: *"look up the savings balance for Rosa"* → *"What is Rosa's
+6-digit member number?"* → *"100442"* → it runs. The window is deliberately short — a
+number from three topics back must not become a plausible answer to a new question — and
+values recovered from history face the same `ParamSpec` validation as freshly typed ones.
+
 **Live intervention alerts.** When a run escalates, an SSE event drives a modal and a
 browser notification (works with the tab backgrounded).
 

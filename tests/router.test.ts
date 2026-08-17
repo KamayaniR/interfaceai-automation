@@ -102,3 +102,20 @@ test('clarify and discover proposals pass through untouched', () => {
   const d = applyGuardrails(propose({ action: 'discover' }), catalog, GOAL);
   assert.equal(d.action, 'discover');
 });
+
+test('context is bounded, and the bound is a safety property not an optimisation', async () => {
+  // A long window isn't more helpful, it's more dangerous: a member number from three
+  // topics ago becomes a plausible answer to an unrelated question — exactly the
+  // "acted on the wrong account" failure the clarify path exists to prevent.
+  const { CONTEXT_TURNS } = await import('../src/orchestrator/router.ts');
+  assert.ok(CONTEXT_TURNS >= 2, 'must at least cover a question and its answer');
+  assert.ok(CONTEXT_TURNS <= 10, 'must not grow into a memory of unrelated account numbers');
+});
+
+test('an input resolved from conversation history is still validated', () => {
+  // History may inform how the router READS a goal. It must never widen what is allowed
+  // — a value recovered from an earlier turn faces the same ParamSpec check as one
+  // typed just now.
+  const route = applyGuardrails(propose({ inputs: { memberId: 'from-history' } }), catalog, GOAL);
+  assert.equal(route.action, 'clarify', 'a bad value is rejected regardless of where it came from');
+});
