@@ -148,9 +148,11 @@ export class WebSurface implements Surface {
       });
       await cdp.send('Page.startScreencast', {
         format: 'jpeg',
-        quality: 55,
-        maxWidth: 900,
-        maxHeight: 700,
+        quality: 70,
+        // Match the browser viewport (1280x900) rather than downscaling — the pane
+        // scales it down in CSS, which looks far better than upscaling a small capture.
+        maxWidth: 1280,
+        maxHeight: 900,
         everyNthFrame: 1,
       });
     } catch {
