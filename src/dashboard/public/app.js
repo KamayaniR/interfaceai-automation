@@ -78,6 +78,61 @@ async function openDrawer(id) {
   $('#backdrop').classList.add('open');
 }
 
+/**
+ * A run's evidence: the result contract, what it did and why, and any screenshots.
+ * This is the "why did it do that" path — reachable from the conversation rather than
+ * by grepping a directory.
+ */
+async function openRun(runId) {
+  const d = await (await fetch(`/api/runs/${runId}`)).json();
+  const drawer = $('#drawer');
+  drawer.innerHTML = '';
+
+  const close = el('button', 'ghost', 'Close');
+  close.onclick = () => {
+    drawer.classList.remove('open');
+    $('#backdrop').classList.remove('open');
+  };
+  drawer.append(close);
+
+  drawer.append(el('h3', null, `Run ${runId}`));
+
+  if (d.result) {
+    const r = d.result;
+    const head = [`STATUS   ${r.status}`];
+    if (r.status === 'success') head.push(`OUTPUTS  ${JSON.stringify(r.outputs)}`);
+    if (r.status === 'business_outcome') head.push(`OUTCOME  ${r.outcome.code}`, `         ${r.outcome.message}`);
+    if (r.status === 'failure') {
+      head.push(`CLASS    ${r.failure.class}`, `STEP     ${r.failure.stepId ?? '(pre-flight)'}`,
+                `MESSAGE  ${r.failure.message}`);
+      if (r.failure.expected) head.push(`EXPECTED ${r.failure.expected}`, `OBSERVED ${r.failure.observed}`);
+    }
+    head.push('', `DURATION ${r.durationMs}ms over ${r.trace.length} step(s)`);
+    for (const t of r.trace) {
+      head.push(`  ${t.status.padEnd(9)} ${t.stepId}  ${t.intent}` +
+                (t.conditionFired ? `   [${t.conditionFired}]` : ''));
+    }
+    if (r.drift?.length) {
+      head.push('', 'DRIFT');
+      for (const dr of r.drift) head.push(`  ${dr.stepId}: ${dr.note}`);
+    }
+    drawer.append(el('pre', null, head.join('\n')));
+  }
+
+  for (const name of d.screenshots) {
+    const img = el('img', 'shot');
+    img.src = `/api/runs/${runId}/screenshot/${name}`;
+    drawer.append(img);
+  }
+
+  // The structured log, which is the actual audit trail.
+  drawer.append(el('h3', null, `Log (${d.log.length} events)`));
+  drawer.append(el('pre', null, d.log.map((e) => `${e.at.slice(11, 19)}  ${e.type}`).join('\n')));
+
+  drawer.classList.add('open');
+  $('#backdrop').classList.add('open');
+}
+
 $('#backdrop').onclick = () => {
   $('#drawer').classList.remove('open');
   $('#backdrop').classList.remove('open');
@@ -101,11 +156,50 @@ function renderMessage(m) {
       a.onclick = () => openDrawer(m.refs.capabilityId);
       refs.append(a);
     }
-    if (m.refs.runId) refs.append(el('span', null, `run ${m.refs.runId}`));
+    if (m.refs.runId) {
+      const r = el('a', null, `run ${m.refs.runId}`);
+      r.onclick = () => openRun(m.refs.runId);
+      refs.append(r);
+    }
     wrap.append(refs);
   }
   $('#messages').append(wrap);
   $('#messages').scrollTop = $('#messages').scrollHeight;
+}
+
+/**
+ * Without this the panel is a blank void, and the three things the router can do are
+ * invisible to anyone who doesn't already know them. Each example is chosen to land on
+ * a different branch.
+ */
+const EXAMPLES = [
+  ['what is the savings balance for member 100442?', 'runs an existing capability'],
+  ['look up the savings balance for Rosa', 'asks rather than guessing a member number'],
+  ["export last month's wire transfer audit log as a csv", 'finds nothing, offers discovery'],
+];
+
+function renderEmptyState() {
+  const wrap = el('div', 'empty');
+  wrap.append(el('h2', null, 'Ask in plain language.'));
+  wrap.append(el('p', null,
+    'A goal is matched against the capability catalog and replayed — no model decides how to drive the UI.'));
+
+  for (const [text, note] of EXAMPLES) {
+    const row = el('div', 'example');
+    row.append(el('div', 'ex-text', text));
+    row.append(el('div', 'ex-note', note));
+    row.onclick = () => {
+      $('#input').value = text;
+      $('#input').focus();
+    };
+    wrap.append(row);
+  }
+
+  const warn = el('p', 'ex-note');
+  warn.textContent =
+    'Opening a sub-account pauses for human approval — a browser window will open and it is yours to drive.';
+  wrap.append(warn);
+  $('#messages').append(wrap);
 }
 
 async function loadSession() {
@@ -115,7 +209,8 @@ async function loadSession() {
   }
   const msgs = await (await fetch(`/api/sessions/${sessionId}`)).json();
   $('#messages').innerHTML = '';
-  msgs.forEach(renderMessage);
+  if (msgs.length === 0) renderEmptyState();
+  else msgs.forEach(renderMessage);
 }
 
 $('#composer').onsubmit = async (e) => {
@@ -124,6 +219,7 @@ $('#composer').onsubmit = async (e) => {
   const content = input.value.trim();
   if (!content) return;
 
+  $('.empty')?.remove();
   renderMessage({ role: 'user', content, at: new Date().toISOString() });
   input.value = '';
   $('#send').disabled = true;
@@ -151,6 +247,7 @@ $('#newchat').onclick = async () => {
   sessionId = (await (await fetch('/api/sessions', { method: 'POST' })).json()).id;
   localStorage.setItem('sessionId', sessionId);
   $('#messages').innerHTML = '';
+  renderEmptyState();
 };
 
 // ---------------------------------------------------------------------------

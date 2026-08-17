@@ -23,6 +23,11 @@ capability, asks a clarifying question, or reports that nothing matches. Every m
 appended to `sessions/<id>.jsonl` with links back to the `runId` and `capabilityId`, so
 the history can be audited rather than just read.
 
+**Evidence from the conversation.** Every result message links its capability *and* its
+run. Clicking the run opens the result contract, the step trace, the structured log and
+any screenshots — so "why did it do that?" is answerable from the chat rather than by
+grepping `runs/`.
+
 **Live intervention alerts.** When a run escalates, an SSE event drives a modal and a
 browser notification (works with the tab backgrounded).
 

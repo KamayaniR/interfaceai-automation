@@ -122,6 +122,46 @@ function runsFor(capabilityId: string): unknown[] {
     .slice(0, 20);
 }
 
+/**
+ * One run's evidence, by id.
+ *
+ * This is the "why did it do that" path. A chat message that says a capability ran is
+ * only half a record — the other half is the trace, the result contract and the
+ * screenshots, and an auditor asking about a decision six months later needs to reach
+ * them from the conversation, not by grepping a directory.
+ */
+app.get('/api/runs/:runId', (req, res) => {
+  const dir = readdirSync(RUNS_DIR).find((d) => d.endsWith(req.params.runId));
+  if (!dir) return res.status(404).json({ error: 'no such run' });
+  const runDir = join(RUNS_DIR, dir);
+
+  const resultPath = join(runDir, 'result.json');
+  const result = existsSync(resultPath) ? JSON.parse(readFileSync(resultPath, 'utf8')) : null;
+
+  const logPath = join(runDir, 'run.jsonl');
+  const log = existsSync(logPath)
+    ? readFileSync(logPath, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l))
+    : [];
+
+  res.json({
+    runId: req.params.runId,
+    dir: runDir,
+    result,
+    log,
+    screenshots: readdirSync(runDir).filter((f) => f.endsWith('.png')),
+  });
+});
+
+app.get('/api/runs/:runId/screenshot/:name', (req, res) => {
+  const dir = readdirSync(RUNS_DIR).find((d) => d.endsWith(req.params.runId));
+  // Basename the filename — it comes from a URL and must never escape the run directory.
+  const safe = req.params.name.replace(/[^a-zA-Z0-9._-]/g, '');
+  if (!dir || !safe) return res.status(404).end();
+  const p = join(RUNS_DIR, dir, safe);
+  if (!existsSync(p)) return res.status(404).end();
+  res.type('png').send(readFileSync(p));
+});
+
 // ---------------------------------------------------------------------------
 // Sessions and chat
 // ---------------------------------------------------------------------------
