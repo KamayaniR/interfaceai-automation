@@ -1,0 +1,18 @@
+{
+  "capabilityId": "member.read-checking-balance",
+  "capabilityVersion": 1,
+  "inputs": {},
+  "runs": 5,
+  "measuredAt": "2026-08-17T20:11:43.044Z",
+  "buckets": {
+    "failure:contract_violation": 5
+  },
+  "drift": [],
+  "durationMs": {
+    "min": 1,
+    "median": 3,
+    "max": 8
+  },
+  "verdict": "stable",
+  "summary": "consistently failure:contract_violation across 5 runs, every step on its preferred locator"
+}

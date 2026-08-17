@@ -40,6 +40,7 @@ import { verifyContentHash } from '../schema/hash.ts';
 import { Policy } from '../policy/policy.ts';
 import { Redactor } from '../policy/redact.ts';
 import { RunLogger } from '../obs/logger.ts';
+import { pace } from '../obs/pace.ts';
 import { SessionControl, InterventionQueue, type InterventionRequest } from '../escalation/broker.ts';
 
 export interface ReplayOptions {
@@ -256,6 +257,8 @@ export class ReplayEngine {
     };
 
     this.logger.log('step.start', { stepId: step.id, intent: step.intent, risk: step.risk });
+    // Idle time only, so the previous step's result stays on screen long enough to read.
+    await pace();
 
     try {
       await this.act(step, entry, index, total);

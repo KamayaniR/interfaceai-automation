@@ -123,6 +123,25 @@ it isn't. The dashboard also skips the cache when the turn has history, because 
 
 Cached to `routes/cache.json` (gitignored — it is derived, and rebuilds itself).
 
+## Watching it happen
+
+Replay runs at machine speed — a five-step capability finishes in about 2.5s, which is
+correct for production and useless for watching. `REPLAY_PACE_MS` adds deliberate delay:
+
+```bash
+REPLAY_PACE_MS=800 npm run dashboard      # then use the chat as normal
+REPLAY_PACE_MS=800 npm run replay -- --capability member.read-savings-balance --input memberId=100442
+```
+
+It slows two things, because slowing either alone is still unwatchable: `slowMo` on the
+browser makes each click and keystroke a visible event, and a pause between steps keeps a
+checkpoint's result on screen long enough to read. At 800ms the same run takes ~15s.
+
+It only ever adds idle time. It is off by default, never read by the tests or `npm run
+verify`, and cannot mask a race — checkpoints poll to their own timeout regardless, so
+waiting longer never turns a failing one into a passing one. Verified: the not-found path
+still reports `MEMBER_NOT_FOUND` under pacing, not a timeout.
+
 ## Known gaps
 
 - **No auth.** Anyone reaching the port can resolve an intervention. Real deployment needs

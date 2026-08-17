@@ -5,7 +5,7 @@
     "version": 1,
     "name": "Read member checking (D1) balance",
     "description": "Signs on to the CoreVue back-office console, looks up a member by member number, and reads the Checking (D1) current balance (plus the member name) from the Member Detail screen. Read-only: no records are modified.",
-    "status": "draft"
+    "status": "approved"
   },
   "app": {
     "appId": "corevue",
