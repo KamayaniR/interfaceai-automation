@@ -119,6 +119,15 @@ else
 fi
 
 echo
+echo "── stability scoring ───────────────────────────────────────"
+V=$(python3 -c "import json;print(json.load(open('evidence/stability/02-stable-business-outcome.json'))['verdict'])" 2>/dev/null)
+[ "$V" = "stable" ] && ok "a consistent business outcome scores STABLE, not failure" \
+                    || bad "business outcome is stable" "stable" "$V"
+V=$(python3 -c "import json;print(json.load(open('evidence/stability/03-degraded-locator-drift.json'))['verdict'])" 2>/dev/null)
+[ "$V" = "degraded" ] && ok "all-green runs on fallback locators score DEGRADED" \
+                      || bad "drift is degraded" "degraded" "$V"
+
+echo
 echo "── evidence integrity ──────────────────────────────────────"
 MISMATCH=0
 for d in evidence/replay/*/; do

@@ -1,0 +1,20 @@
+{
+  "capabilityId": "member.read-savings-balance",
+  "capabilityVersion": 1,
+  "inputs": {
+    "memberId": "100442"
+  },
+  "runs": 10,
+  "measuredAt": "2026-08-17T00:23:08.448Z",
+  "buckets": {
+    "success": 10
+  },
+  "drift": [],
+  "durationMs": {
+    "min": 901,
+    "median": 1073,
+    "max": 1573
+  },
+  "verdict": "stable",
+  "summary": "consistently success across 10 runs, every step on its preferred locator"
+}

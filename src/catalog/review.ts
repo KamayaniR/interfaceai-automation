@@ -20,6 +20,7 @@
 
 import type { CapabilityArtifact, StepType, Checkpoint, TargetRef } from '../schema/artifact.ts';
 import { verifyContentHash } from '../schema/hash.ts';
+import { loadReport, promotionAdvice } from '../stability/stability.ts';
 
 /** Describe a target the way a person would say it out loud. */
 function describeTarget(target: TargetRef | undefined): string {
@@ -144,6 +145,17 @@ export function renderForReview(artifact: CapabilityArtifact): string {
     : verdict.state === 'absent' ? 'no content hash (recorded before content addressing)'
     : `⚠ CONTENT HAS BEEN MODIFIED SINCE RECORDING`;
   out.push(`INTEGRITY   ${integrity}`);
+
+  const report = loadReport(process.env.STABILITY_DIR ?? 'stability', c.id, c.version);
+  const advice = promotionAdvice(report);
+  // Always say WHICH inputs it was measured against — a stability score is only
+  // meaningful for the inputs that produced it, and a score measured on a not-found
+  // path says nothing about the happy path.
+  out.push(
+    `STABILITY   ${report ? `${report.verdict} — ${report.summary}` : 'never measured'}` +
+      (report ? `\n            measured with ${JSON.stringify(report.inputs)} on ${report.measuredAt.slice(0, 10)}` : ''),
+  );
+  out.push(`PROMOTION   ${advice.ok ? 'safe to approve' : `NOT recommended — ${advice.note}`}`);
   out.push('');
   out.push(c.description);
   out.push('');

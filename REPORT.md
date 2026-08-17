@@ -107,6 +107,16 @@ an approver actually has to judge — steps in plain language, what each verifie
 failure model, and whether anything is irreversible. Neither is stored; both derive from
 the one source of truth.
 
+**Stability is measured beside the artifact, never inside it.** `npm run stability`
+replays a capability N times and scores it — but on *consistency*, not success rate,
+because a capability that returns `MEMBER_NOT_FOUND` on every run is behaving perfectly.
+Mixed result classes are the real flakiness signal, and all-green runs that only pass
+because a fallback locator caught them score `degraded`: green and rotting. The score
+gates promotion (`catalog approve` refuses an unmeasured or degraded capability without
+`--force`), which turns the `draft → approved` gate from a human hunch into a decision
+against evidence. It lives in `stability/` because an artifact is a contract with a fixed
+content hash, and a score is an observation that changes every time you take it.
+
 Also: `sensitivity` lives on the parameter spec, so a capability can't be defined without
 someone classifying its inputs. `status: draft|approved` gates unattended invocation — a
 freshly discovered capability is a draft nobody has read. Storage is plain JSON at

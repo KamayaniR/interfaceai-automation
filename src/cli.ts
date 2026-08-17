@@ -13,6 +13,7 @@ import { ReplayEngine } from './replay/engine.ts';
 import { Catalog } from './catalog/catalog.ts';
 import { renderForReview } from './catalog/review.ts';
 import { proposeRoute, applyGuardrails } from './orchestrator/router.ts';
+import { measureStability, saveReport, loadReport, promotionAdvice } from './stability/stability.ts';
 import { parseArtifact } from './schema/artifact.ts';
 import type { ReplayResult } from './schema/result.ts';
 
@@ -20,6 +21,7 @@ const ARTIFACTS_DIR = process.env.ARTIFACTS_DIR ?? 'artifacts';
 const RUNS_DIR = process.env.RUNS_DIR ?? 'runs';
 const INTERVENTIONS_DIR = process.env.INTERVENTIONS_DIR ?? 'runs/interventions';
 const POLICY_PATH = process.env.POLICY_PATH ?? 'policy.yaml';
+const STABILITY_DIR = process.env.STABILITY_DIR ?? 'stability';
 
 function arg(name: string, fallback?: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -269,6 +271,55 @@ async function cmdAsk(): Promise<void> {
 
 // ---------------------------------------------------------------------------
 
+async function cmdStability(): Promise<void> {
+  const capabilityId = arg('capability');
+  if (!capabilityId) {
+    console.error('usage: npm run stability -- --capability <id> [--input k=v ...] [--runs 10]');
+    process.exit(2);
+  }
+  const catalog = new Catalog(ARTIFACTS_DIR);
+  const artifact = catalog.get(capabilityId, arg('version') ? Number(arg('version')) : undefined);
+  if (!artifact) {
+    console.error(`No artifact found for "${capabilityId}"`);
+    process.exit(1);
+  }
+
+  const runs = Number(arg('runs', '10'));
+  console.log(`\nMeasuring ${artifact.capability.id} v${artifact.capability.version} over ${runs} runs`);
+  console.log(`  inputs: ${JSON.stringify(collectInputs())}\n`);
+
+  const report = await measureStability({
+    artifact,
+    inputs: collectInputs(),
+    runs,
+    policyPath: POLICY_PATH,
+    runsDir: RUNS_DIR,
+    interventionsDir: INTERVENTIONS_DIR,
+    onProgress: (n, total, bucket) => process.stdout.write(`  run ${n}/${total}  ${bucket}\n`),
+  });
+
+  const path = saveReport(STABILITY_DIR, report);
+  const line = '─'.repeat(64);
+  console.log(`\n${line}`);
+  console.log(`VERDICT   ${report.verdict.toUpperCase()}`);
+  console.log(`          ${report.summary}`);
+  console.log(`\nBUCKETS`);
+  for (const [b, n] of Object.entries(report.buckets)) console.log(`          ${String(n).padStart(3)} × ${b}`);
+  if (report.drift.length) {
+    console.log(`\nDRIFT`);
+    for (const d of report.drift) console.log(`          ${d.stepId}: ${d.occurrences} run(s), worst rung ${d.worstRung}`);
+  }
+  console.log(`\nDURATION  min ${report.durationMs.min}ms · median ${report.durationMs.median}ms · max ${report.durationMs.max}ms`);
+  const advice = promotionAdvice(report);
+  console.log(`\nPROMOTION ${advice.ok ? 'safe to approve' : 'NOT recommended'} — ${advice.note}`);
+  console.log(`\nREPORT    ${path}`);
+  console.log(`${line}\n`);
+
+  process.exit(report.verdict === 'flaky' ? 1 : 0);
+}
+
+// ---------------------------------------------------------------------------
+
 function cmdCatalog(): void {
   const catalog = new Catalog(ARTIFACTS_DIR);
   const sub = process.argv[3];
@@ -284,10 +335,26 @@ function cmdCatalog(): void {
       console.error(`No such capability: ${id}`);
       process.exit(1);
     }
+    // Approval is a human act, but it should be an INFORMED one. The measured
+    // stability of this exact version is surfaced before promoting, and a capability
+    // that is flaky or has never been measured requires an explicit --force.
+    const report = loadReport(STABILITY_DIR, id, artifact.capability.version);
+    const advice = promotionAdvice(report);
+    console.log(`\n  stability: ${advice.note}`);
+
+    if (!advice.ok && !flag('force')) {
+      console.error(
+        `\n  Not approving. Measure it first:\n` +
+          `      npm run stability -- --capability ${id} --input <k=v> --runs 10\n\n` +
+          `  Or approve anyway with --force if you have other evidence.\n`,
+      );
+      process.exit(1);
+    }
+
     artifact.capability.status = 'approved';
     const path = join(ARTIFACTS_DIR, id, `v${artifact.capability.version}.json`);
     writeFileSync(path, JSON.stringify(artifact, null, 2));
-    console.log(`Approved ${id} v${artifact.capability.version} — now invocable unattended.`);
+    console.log(`  Approved ${id} v${artifact.capability.version} — now invocable unattended.\n`);
     return;
   }
 
@@ -348,6 +415,9 @@ switch (command) {
   case 'ask':
     await cmdAsk();
     break;
+  case 'stability':
+    await cmdStability();
+    break;
   case 'catalog':
     cmdCatalog();
     break;
@@ -363,6 +433,9 @@ Computer-use automation system
 
   npm run replay -- --capability <id> [--input k=v ...] [--fault <name>] [--headed]
       Deterministic replay. No LLM. Faults: notfound validation permdenied timeout dialog slow
+
+  npm run stability -- --capability <id> [--input k=v ...] [--runs 10]
+      Replay N times; report consistency, drift and a promotion recommendation.
 
   npm run catalog [-- review <id> | -- show <id> | -- approve <id>]
       review = the human projection; show = the agent tool definition.

@@ -182,7 +182,40 @@ The router is a *client* of the catalog, not part of the system — see REPORT �
 cannot invoke a draft, supply inputs that fail their declared pattern, or widen what an
 action may do; those gates live elsewhere and it cannot overrule them.
 
-### 6. The capability catalog — two projections of one artifact
+### 6. Measure before you trust it
+
+The approval gate asks a human to promote a capability for unattended use. This gives
+them evidence instead of a hunch:
+
+```bash
+npm run stability -- --capability member.read-savings-balance --input memberId=100442 --runs 10
+```
+
+```
+VERDICT   STABLE
+          consistently success across 10 runs, every step on its preferred locator
+PROMOTION safe to approve — stable across 10 runs with {"memberId":"100442"}
+```
+
+Stability means **consistency, not success rate**. A member number that doesn't exist
+should return `MEMBER_NOT_FOUND` on every run — that is perfectly stable, and a score
+built on success rate would call it broken.
+
+The second signal is drift. A capability whose runs all pass *because a fallback locator
+caught them* is green and rotting; it scores `degraded` and `npm run catalog -- approve`
+refuses it without `--force`:
+
+```
+VERDICT   DEGRADED
+          consistently success across 4 runs, but 1 step(s) resolved on a fallback
+          locator — the preferred targeting has already stopped matching
+PROMOTION NOT recommended
+```
+
+Scores live in `stability/`, never inside the artifact — an artifact is a contract with
+a fixed content hash; a score is an observation that changes each time you measure.
+
+### 7. The capability catalog — two projections of one artifact
 
 ```bash
 npm run catalog                                          # list
@@ -205,7 +238,7 @@ each, so you get PASS/FAIL rather than output to read. It starts and stops the t
 itself and needs no API key. 14 checks, ~40s.
 
 ```bash
-npm test          # 47 unit tests
+npm test          # 54 unit tests
 npm run typecheck
 ```
 

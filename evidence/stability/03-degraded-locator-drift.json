@@ -1,0 +1,27 @@
+{
+  "capabilityId": "member.read-savings-balance",
+  "capabilityVersion": 1,
+  "inputs": {
+    "memberId": "100442"
+  },
+  "runs": 4,
+  "measuredAt": "2026-08-17T00:22:53.902Z",
+  "buckets": {
+    "success": 4
+  },
+  "drift": [
+    {
+      "stepId": "s06",
+      "occurrences": 4,
+      "worstRung": 2,
+      "note": "preferred locator failed; matched via fallback strategy \"structural\" (rung 2). Re-record this capability before the remaining rungs degrade."
+    }
+  ],
+  "durationMs": {
+    "min": 1008,
+    "median": 1057,
+    "max": 1256
+  },
+  "verdict": "degraded",
+  "summary": "consistently success across 4 runs, but 1 step(s) resolved on a fallback locator — the preferred targeting has already stopped matching"
+}

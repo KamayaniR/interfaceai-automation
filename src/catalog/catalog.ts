@@ -19,6 +19,7 @@
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArtifact, type CapabilityArtifact } from '../schema/artifact.ts';
+import { loadReport } from '../stability/stability.ts';
 
 export interface CapabilityToolDef {
   name: string;
@@ -37,11 +38,20 @@ export interface CapabilityToolDef {
     returns: Record<string, string>;
     outcomes: { code: string; description: string }[];
     invocable: boolean;
+    /**
+     * Measured, not declared. Absent means never measured — which a caller deciding
+     * whether to run something unattended should treat as a warning, not as "fine".
+     */
+    stability?: { verdict: 'stable' | 'degraded' | 'flaky'; runs: number; summary: string };
   };
 }
 
 export class Catalog {
-  constructor(private readonly artifactsDir: string) {}
+  constructor(
+    private readonly artifactsDir: string,
+    /** Where measured stability reports live. Derived data, kept outside the artifact. */
+    private readonly stabilityDir = process.env.STABILITY_DIR ?? 'stability',
+  ) {}
 
   /**
    * Every capability, at the version that would actually run.
@@ -150,9 +160,14 @@ export class Catalog {
         ? `\n\nSTATUS: draft — discovered by an LLM and not yet reviewed by a human. Not available for unattended invocation.`
         : '';
 
+    const report = loadReport(this.stabilityDir, artifact.capability.id, artifact.capability.version);
+    const stabilityNote = report
+      ? `\n\nMeasured stability: ${report.verdict} — ${report.summary}`
+      : `\n\nStability has never been measured for this version.`;
+
     return {
       name: artifact.capability.id.replace(/[^a-zA-Z0-9_-]/g, '_'),
-      description: artifact.capability.description + outcomeNote + draftNote,
+      description: artifact.capability.description + outcomeNote + stabilityNote + draftNote,
       input_schema: { type: 'object', properties, required, additionalProperties: false },
       _meta: {
         version: artifact.capability.version,
@@ -161,6 +176,9 @@ export class Catalog {
         returns,
         outcomes: artifact.outcomes.map((o) => ({ code: o.code, description: o.description })),
         invocable: artifact.capability.status === 'approved',
+        stability: report
+          ? { verdict: report.verdict, runs: report.runs, summary: report.summary }
+          : undefined,
       },
     };
   }

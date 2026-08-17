@@ -244,3 +244,28 @@ returned the **highest** version. So the tool definitions handed to the router d
 v2's contract (`memberNumber`, `operatorId`, `operatorPassword`) while the guardrails would
 have invoked v1 (`memberId`). The catalog was advertising one contract and running another.
 `list()` now delegates to `get()`.
+
+## Stability scoring — `stability/`
+
+Three real measurements, one per verdict. Each is the full report the scorer wrote.
+
+| File | Measurement | Verdict |
+|---|---|---|
+| `01-stable-happy-path.json` | 10 runs, `memberId=100442` | **stable** — 10 × success, every step on its preferred locator |
+| `02-stable-business-outcome.json` | 6 runs, `memberId=999999` | **stable** — 6 × `MEMBER_NOT_FOUND` |
+| `03-degraded-locator-drift.json` | 4 runs against a copy with the top two locator rungs broken | **degraded** — 4 × success, but every run fell to rung 2 |
+
+**`02` is the definition working.** A member number that doesn't exist returns
+`MEMBER_NOT_FOUND` every time. That is perfectly stable behaviour — a score built on
+success rate would have marked a correctly-functioning capability as broken.
+
+**`03` is the case a single manual test cannot catch.** All four runs passed. A human
+running it once sees green. But every run only succeeded because a *fallback* locator
+caught it, so the preferred targeting has already stopped matching and the capability is
+one more UI change from failing outright. `npm run catalog -- approve` refuses it without
+`--force`.
+
+Reports live here rather than inside the artifact: an artifact is a contract with a fixed
+content hash, and a stability score is an observation that changes every time you measure.
+Each report records the exact inputs it was taken with, because a score measured on the
+not-found path says nothing about the happy path.
