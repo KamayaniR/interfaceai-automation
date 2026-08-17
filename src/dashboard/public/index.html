@@ -91,7 +91,21 @@
   table.kv { width:100%; border-collapse:collapse; font-size:13px; margin:10px 0; }
   table.kv td { padding:4px 0; vertical-align:top; }
   table.kv td:first-child { color:var(--muted); width:140px; }
-  img.shot { max-width:100%; border:1px solid var(--line); border-radius:4px; margin-top:10px; }
+  /* The app paints its content in the top band of a 1280x900 viewport, so a screenshot
+     is mostly dead grey. Left uncapped it pushed the decision buttons below the fold —
+     an escalation you cannot resolve without scrolling is a broken escalation. Crop to
+     the top rather than shrinking: the operator needs to READ the form, not see all of
+     the empty space under it. */
+  img.shot { display:block; width:100%; max-height:230px; object-fit:cover;
+             object-position:top center; border:1px solid var(--line);
+             border-radius:4px; margin-top:10px; cursor:zoom-in; }
+  img.shot.full { max-height:none; object-fit:contain; cursor:zoom-out; }
+
+  /* The decision must stay reachable no matter how far the operator has scrolled. */
+  .modal-actions { position:sticky; bottom:-22px; margin-top:12px; padding:12px 0 4px;
+                   background:var(--panel); display:flex; gap:9px; align-items:center;
+                   border-top:1px solid var(--line); }
+  .shot-hint { color:var(--muted); font-size:11px; margin-top:4px; }
   code { background:#0f1419; padding:1px 5px; border-radius:3px; font-size:12px; }
   .empty { max-width:660px; margin:8vh auto 0; }
   .empty h2 { font-size:19px; margin:0 0 6px; }

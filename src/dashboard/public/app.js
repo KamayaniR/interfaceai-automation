@@ -393,8 +393,13 @@ function showIntervention(r) {
 
   const shot = el('img', 'shot');
   shot.src = `/api/interventions/${r.id}/screenshot`;
-  shot.onerror = () => shot.remove();
-  card.append(shot);
+  const hint = el('div', 'shot-hint', 'State when automation stopped — click to expand.');
+  shot.onclick = () => shot.classList.toggle('full');
+  shot.onerror = () => {
+    shot.remove();
+    hint.remove();
+  };
+  card.append(shot, hint);
 
   const input = el('input');
   input.id = 'opnote';
@@ -402,8 +407,7 @@ function showIntervention(r) {
   input.style.cssText = 'width:100%;margin-top:14px;padding:9px;background:#0f1419;border:1px solid #2a3441;color:#e6e6e6;border-radius:5px;font:inherit';
   card.append(input);
 
-  const actions = el('div');
-  actions.style.cssText = 'display:flex;gap:9px;margin-top:12px';
+  const actions = el('div', 'modal-actions');
   const resume = el('button', null, 'Resume automation');
   resume.onclick = () => resolve('resume');
   const abort = el('button', 'ghost', 'Abort run');
