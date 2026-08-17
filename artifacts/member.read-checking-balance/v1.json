@@ -1,0 +1,539 @@
+{
+  "schemaVersion": "1.0",
+  "capability": {
+    "id": "member.read-checking-balance",
+    "version": 1,
+    "name": "Read member checking (D1) balance",
+    "description": "Signs on to the CoreVue 7.2 back-office console, looks up a member by member number, and returns the member's name and the current balance of their checking (D1) share account from the Member Detail screen. Read-only: no records are modified.",
+    "status": "approved"
+  },
+  "app": {
+    "appId": "corevue",
+    "vendor": "meridian-systems",
+    "variantOf": null,
+    "tenantId": null,
+    "entryUrl": "http://localhost:3100"
+  },
+  "inputs": {
+    "operatorId": {
+      "type": "string",
+      "description": "Operator ID used to sign on to the CoreVue console.",
+      "required": true,
+      "sensitivity": "secret"
+    },
+    "operatorPassword": {
+      "type": "string",
+      "description": "Password for the operator sign-on.",
+      "required": true,
+      "sensitivity": "secret"
+    },
+    "memberNumber": {
+      "type": "string",
+      "description": "The credit union member number to look up.",
+      "required": true,
+      "pattern": "^\\d{6}$",
+      "sensitivity": "pii"
+    }
+  },
+  "outputs": {
+    "checkingBalance": {
+      "type": "money",
+      "description": "Current balance of the member's checking (D1) share account, in USD without currency symbol.",
+      "sensitivity": "pii"
+    },
+    "memberName": {
+      "type": "string",
+      "description": "Member name as shown on the Member Detail screen (LAST, FIRST M).",
+      "sensitivity": "pii"
+    }
+  },
+  "outcomes": [
+    {
+      "code": "MEMBER_NOT_FOUND",
+      "description": "The supplied member number does not match any member record, so no detail screen and no balances are returned.",
+      "terminal": true
+    }
+  ],
+  "preconditions": [],
+  "steps": [
+    {
+      "id": "s01",
+      "intent": "Open the corevue entry point",
+      "action": {
+        "kind": "navigate",
+        "url": "http://localhost:3100"
+      },
+      "risk": "safe",
+      "waitFor": {
+        "kind": "url-matches",
+        "pattern": "/",
+        "timeoutMs": 10000,
+        "description": "the browser reaches / after \"Open the corevue entry point\""
+      },
+      "onCondition": []
+    },
+    {
+      "id": "s02",
+      "intent": "Enter the operator ID to sign on to the console",
+      "action": {
+        "kind": "type",
+        "value": "{{operatorId}}",
+        "clearFirst": true
+      },
+      "target": {
+        "framePath": [
+          "frame"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "textbox",
+            "name": "Operator ID",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "label-proximity",
+            "labelText": "Operator ID",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "role-name",
+            "role": "textbox",
+            "name": "Operator ID",
+            "nameIsSubstring": true
+          },
+          {
+            "by": "structural",
+            "formIndex": -1,
+            "controlIndex": 0
+          }
+        ],
+        "fingerprint": {
+          "tagName": "input",
+          "inputType": "text",
+          "attrs": {
+            "name": "f_01",
+            "type": "text"
+          }
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "kind": "url-matches",
+        "pattern": "/",
+        "timeoutMs": 10000,
+        "description": "the browser reaches / after \"Enter the operator ID to sign on to the console\""
+      },
+      "onCondition": [
+        {
+          "when": {
+            "id": "member-not-found",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "Member not found"
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NOT_FOUND"
+          }
+        }
+      ]
+    },
+    {
+      "id": "s03",
+      "intent": "Enter the operator password to sign on",
+      "action": {
+        "kind": "type",
+        "value": "{{operatorPassword}}",
+        "clearFirst": true
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "textbox",
+            "name": "Password",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "label-proximity",
+            "labelText": "Password",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "role-name",
+            "role": "textbox",
+            "name": "Password",
+            "nameIsSubstring": true
+          },
+          {
+            "by": "structural",
+            "formIndex": -1,
+            "controlIndex": 1
+          }
+        ],
+        "fingerprint": {
+          "tagName": "input",
+          "inputType": "password",
+          "attrs": {
+            "name": "f_02",
+            "type": "password"
+          }
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "kind": "url-matches",
+        "pattern": "/",
+        "timeoutMs": 10000,
+        "description": "the browser reaches / after \"Enter the operator password to sign on\""
+      },
+      "onCondition": [
+        {
+          "when": {
+            "id": "member-not-found",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "Member not found"
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NOT_FOUND"
+          }
+        }
+      ]
+    },
+    {
+      "id": "s04",
+      "intent": "Submit the sign-on form",
+      "action": {
+        "kind": "click"
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "button",
+            "name": "Sign On",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "label-proximity",
+            "labelText": "Operator Sign On",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "role-name",
+            "role": "button",
+            "name": "Sign On",
+            "nameIsSubstring": true
+          },
+          {
+            "by": "structural",
+            "formIndex": 0,
+            "controlIndex": 0
+          }
+        ],
+        "fingerprint": {
+          "tagName": "input",
+          "inputType": "submit",
+          "attrs": {
+            "type": "submit"
+          }
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "kind": "url-matches",
+        "pattern": "/",
+        "timeoutMs": 10000,
+        "description": "the browser reaches / after \"Submit the sign-on form\""
+      },
+      "onCondition": [
+        {
+          "when": {
+            "id": "member-not-found",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "Member not found"
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NOT_FOUND"
+          }
+        }
+      ]
+    },
+    {
+      "id": "s05",
+      "intent": "Enter the member number to look up",
+      "action": {
+        "kind": "type",
+        "value": "{{memberNumber}}",
+        "clearFirst": true
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "textbox",
+            "name": "Member Number",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "label-proximity",
+            "labelText": "Member Number",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "role-name",
+            "role": "textbox",
+            "name": "Member Number",
+            "nameIsSubstring": true
+          },
+          {
+            "by": "structural",
+            "formIndex": 0,
+            "controlIndex": 0
+          }
+        ],
+        "fingerprint": {
+          "tagName": "input",
+          "inputType": "text",
+          "attrs": {
+            "name": "f_mbr",
+            "type": "text"
+          }
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "kind": "url-matches",
+        "pattern": "/",
+        "timeoutMs": 10000,
+        "description": "the browser reaches / after \"Enter the member number to look up\""
+      },
+      "onCondition": [
+        {
+          "when": {
+            "id": "member-not-found",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "Member not found"
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NOT_FOUND"
+          }
+        }
+      ]
+    },
+    {
+      "id": "s06",
+      "intent": "Search for the member record",
+      "action": {
+        "kind": "click"
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "role-name",
+            "role": "button",
+            "name": "Search",
+            "nameIsSubstring": false
+          },
+          {
+            "by": "label-proximity",
+            "labelText": "Member Lookup",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "role-name",
+            "role": "button",
+            "name": "Search",
+            "nameIsSubstring": true
+          },
+          {
+            "by": "structural",
+            "formIndex": 0,
+            "controlIndex": 1
+          }
+        ],
+        "fingerprint": {
+          "tagName": "input",
+          "inputType": "submit",
+          "attrs": {
+            "type": "submit"
+          }
+        }
+      },
+      "risk": "safe",
+      "waitFor": {
+        "kind": "url-matches",
+        "pattern": "/",
+        "timeoutMs": 10000,
+        "description": "the browser reaches / after \"Search for the member record\""
+      },
+      "onCondition": [
+        {
+          "when": {
+            "id": "member-not-found",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "Member not found"
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NOT_FOUND"
+          }
+        }
+      ]
+    },
+    {
+      "id": "s07",
+      "intent": "Capture the checking (D1) current balance that was requested",
+      "action": {
+        "kind": "extract",
+        "outputName": "checkingBalance",
+        "from": "text",
+        "pattern": "\\$([\\d,\\.]+)"
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "label-proximity",
+            "labelText": "Checking (D1) Current Balance",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "anchor-relative",
+            "anchorText": "Checking (D1) Current Balance",
+            "role": "text",
+            "offset": 0
+          }
+        ],
+        "fingerprint": {
+          "tagName": "td",
+          "attrs": {}
+        }
+      },
+      "risk": "safe",
+      "onCondition": [
+        {
+          "when": {
+            "id": "member-not-found",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "Member not found"
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NOT_FOUND"
+          }
+        }
+      ]
+    },
+    {
+      "id": "s08",
+      "intent": "Capture the member name to confirm the record identity",
+      "action": {
+        "kind": "extract",
+        "outputName": "memberName",
+        "from": "text"
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "label-proximity",
+            "labelText": "Name",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "anchor-relative",
+            "anchorText": "Name",
+            "role": "text",
+            "offset": 0
+          }
+        ],
+        "fingerprint": {
+          "tagName": "td",
+          "attrs": {}
+        }
+      },
+      "risk": "safe",
+      "onCondition": [
+        {
+          "when": {
+            "id": "member-not-found",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "Member not found"
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NOT_FOUND"
+          }
+        }
+      ]
+    }
+  ],
+  "checkpoint": {
+    "kind": "text-present",
+    "text": "Checking (D1) Current Balance",
+    "framePath": [],
+    "timeoutMs": 15000,
+    "description": "\"Checking (D1) Current Balance\" is visible, proving the capability reached its goal"
+  },
+  "provenance": {
+    "model": "claude-opus-5",
+    "runId": "d282bf30",
+    "discoveredAt": "2026-08-17T01:41:02.889Z",
+    "transcriptDigest": "f4ba6b0597dbf35f"
+  }
+}

@@ -39,6 +39,8 @@ export interface Message {
     status?: ReplayResult['status'];
     outcomeCode?: string;
     interventionId?: string;
+    /** Set on a "nothing matches" message so the UI can offer to record one. */
+    offerDiscovery?: string;
   };
 }
 

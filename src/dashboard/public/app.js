@@ -62,6 +62,67 @@ async function openDrawer(id) {
   // The human projection is the point of this panel — an approver reads this, not JSON.
   drawer.append(el('pre', null, d.review));
 
+  // A draft is unusable until measured and approved. Put that loop where the draft is.
+  if (d.artifact.capability.status === 'draft') {
+    const box = el('div');
+    box.style.cssText = 'margin:14px 0;padding:14px;border:1px solid #4a3a12;border-radius:6px;background:#1d1809';
+    box.append(el('div', null, 'This is a draft — an LLM recorded it and no human has reviewed it. It cannot be invoked.'));
+
+    const inputs = Object.keys(d.artifact.inputs);
+    const field = el('input');
+    field.placeholder = inputs.length ? `${inputs.join(', ')} — e.g. ${inputs[0]}=100442` : '(no inputs)';
+    field.style.cssText = 'width:100%;margin-top:10px;padding:8px;background:#0f1419;border:1px solid #2a3441;color:#e6e6e6;border-radius:5px;font:inherit';
+    box.append(field);
+
+    const row = el('div');
+    row.style.cssText = 'display:flex;gap:8px;margin-top:10px';
+    const measure = el('button', null, 'Measure (5 runs)');
+    measure.style.cssText = 'font-size:12px;padding:7px 12px';
+    const approve = el('button', 'ghost', 'Approve');
+    approve.style.cssText = 'font-size:12px;padding:7px 12px';
+    const note = el('div', 'ex-note');
+
+    measure.onclick = async () => {
+      measure.disabled = true; measure.textContent = 'Measuring…';
+      const inputsObj = {};
+      for (const pair of field.value.split(/[,\s]+/).filter(Boolean)) {
+        const [k, ...v] = pair.split('=');
+        if (k) inputsObj[k] = v.join('=');
+      }
+      const r = await (await fetch(`/api/capabilities/${id}/measure`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ version: d.artifact.capability.version, inputs: inputsObj, runs: 5 }),
+      })).json();
+      note.textContent = r.error ? `Failed: ${r.error}` : `${r.verdict} — ${r.summary}`;
+      measure.disabled = false; measure.textContent = 'Measure (5 runs)';
+    };
+
+    approve.onclick = async () => {
+      const res = await fetch(`/api/capabilities/${id}/approve`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ version: d.artifact.capability.version }),
+      });
+      const r = await res.json();
+      if (res.status === 409) {
+        note.textContent = `Refused: ${r.error}`;
+        if (confirm(`${r.error}\n\nApprove anyway?`)) {
+          await fetch(`/api/capabilities/${id}/approve`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ version: d.artifact.capability.version, force: true }),
+          });
+          openDrawer(id); loadCatalog();
+        }
+      } else {
+        note.textContent = `Approved — ${r.note}`;
+        openDrawer(id); loadCatalog();
+      }
+    };
+
+    row.append(measure, approve);
+    box.append(row, note);
+    drawer.append(box);
+  }
+
   if (d.runs.length) {
     drawer.append(el('h3', null, `Recent runs (${d.runs.length})`));
     const t = el('table', 'kv');
@@ -163,8 +224,51 @@ function renderMessage(m) {
     }
     wrap.append(refs);
   }
+  // The discover branch is otherwise a dead end in the UI — it identifies that a
+  // capability is missing and hands you back to a terminal. This closes the loop.
+  if (m.refs?.offerDiscovery) {
+    const bar = el('div', 'refs');
+    const rec = el('button');
+    rec.textContent = 'Record this capability';
+    rec.style.cssText = 'padding:6px 14px;font-size:12px';
+    rec.onclick = () => startDiscovery(m.refs.offerDiscovery, rec);
+    bar.append(rec);
+    bar.append(el('span', null, '  runs a live LLM session against the app — minutes, and it costs money'));
+    wrap.append(bar);
+  }
+
   $('#messages').append(wrap);
   $('#messages').scrollTop = $('#messages').scrollHeight;
+}
+
+/** Kick off a recording. Long-running, so the UI says so and streams as it goes. */
+async function startDiscovery(goal, button) {
+  if (!confirm(`Record a new capability for:\n\n"${goal}"\n\nThis drives the live app with a model for up to a few minutes.`)) return;
+  button.disabled = true;
+  button.textContent = 'Recording…';
+  renderMessage({ role: 'system', content: 'Recording — watch the live pane.', at: new Date().toISOString() });
+
+  // Progress messages are appended server-side as the model works; re-render
+  // periodically so they appear rather than arriving in one lump at the end.
+  const poll = setInterval(() => loadSession(), 3000);
+
+  try {
+    const res = await fetch(`/api/sessions/${sessionId}/discover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ goal }),
+    });
+    clearInterval(poll);
+    await res.json();
+    await loadSession();
+    loadCatalog();
+  } catch (err) {
+    clearInterval(poll);
+    renderMessage({ role: 'system', content: `Recording failed: ${err.message}` });
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Record this capability';
+  }
 }
 
 /**

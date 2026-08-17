@@ -53,6 +53,21 @@ over CDP) is what the brief scopes out.
 **Live intervention alerts.** When a run escalates, an SSE event drives a modal and a
 browser notification (works with the tab backgrounded).
 
+**Recording new capabilities, without leaving the dashboard.** When nothing in the
+catalog matches, the reply carries a **Record this capability** button. Pressing it runs
+a real discovery session — you watch the model drive CoreVue in the live pane while its
+reasoning and actions stream into the chat — and it lands as a **draft**.
+
+Drafts can't be invoked. Opening one in the drawer gives you the rest of the loop inline:
+**Measure** (replays it N times and scores consistency) and **Approve** (refused unless
+the measurement supports it, with an explicit force). So the whole lifecycle —
+discover → review → measure → approve → invoke — happens in one place, with the same
+gates the CLI enforces.
+
+Discovery is behind a confirmation on purpose. It drives a live application with a model
+for minutes and costs real money; starting one because a match was fuzzy is the wrong
+default. The chat offers it, a human presses it.
+
 ## The one constraint
 
 **Replay blocks when it escalates.** The engine sits inside `waitForResolution()` holding

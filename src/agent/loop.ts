@@ -41,6 +41,14 @@ export interface DiscoverOptions {
   headed: boolean;
   maxSteps: number;
   timeoutMs: number;
+  /**
+   * Progress for a watcher. Discovery runs for minutes, and a UI that shows nothing for
+   * that long is indistinguishable from one that has hung — so the model's reasoning and
+   * each action are surfaced as they happen, not summarised at the end.
+   */
+  onProgress?: (event: { kind: 'thinking' | 'action' | 'refused' | 'done'; text: string }) => void;
+  /** Live frames from the discovery session, for the same watcher. */
+  onFrame?: (frame: string) => void;
 }
 
 export type DiscoverResult =
@@ -83,6 +91,7 @@ export async function discover(opts: DiscoverOptions): Promise<DiscoverResult> {
     policy,
     control,
     onEvent: (e) => logger.log(e.type, e.detail),
+    onFrame: opts.onFrame,
   });
 
   const recorded: RecordedAction[] = [];
@@ -172,6 +181,7 @@ export async function discover(opts: DiscoverOptions): Promise<DiscoverResult> {
         if (block.type === 'text' && block.text.trim()) {
           logger.log('model.text', { text: block.text.slice(0, 1000) });
           console.log(`  · ${block.text.trim().split('\n')[0]?.slice(0, 110)}`);
+          opts.onProgress?.({ kind: 'thinking', text: block.text.trim() });
         }
       }
 
@@ -200,6 +210,10 @@ export async function discover(opts: DiscoverOptions): Promise<DiscoverResult> {
         const input = use.input as Record<string, unknown>;
         logger.log('model.tool_use', { tool: use.name, input: redactor.scrubDeep(input) });
         console.log(`  → ${use.name}(${JSON.stringify(input).slice(0, 100)})`);
+        opts.onProgress?.({
+          kind: 'action',
+          text: `${use.name}: ${String(input.intent ?? input.url ?? input.reason ?? '')}`.slice(0, 160),
+        });
 
         // ---- terminal tools -------------------------------------------------
         if (use.name === 'stuck') {
@@ -305,6 +319,7 @@ export async function discover(opts: DiscoverOptions): Promise<DiscoverResult> {
         } catch (err) {
           if (err instanceof PolicyBlockedError || err instanceof ConfirmationRequiredError) {
             logger.log('policy.refused', { tool: use.name, reason: err.message });
+            opts.onProgress?.({ kind: 'refused', text: err.message });
             toolResults.push({
               type: 'tool_result',
               tool_use_id: use.id,

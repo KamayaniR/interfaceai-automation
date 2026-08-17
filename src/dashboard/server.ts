@@ -22,7 +22,7 @@
  */
 
 import express from 'express';
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
@@ -35,6 +35,8 @@ import { SessionStore } from './sessions.ts';
 import { proposeRoute, applyGuardrails, CONTEXT_TURNS } from '../orchestrator/router.ts';
 import { ReplayEngine } from '../replay/engine.ts';
 import { verifyContentHash } from '../schema/hash.ts';
+import { discover } from '../agent/loop.ts';
+import { measureStability, saveReport, loadReport as loadStability, promotionAdvice } from '../stability/stability.ts';
 
 const PORT = Number(process.env.DASHBOARD_PORT ?? 3300);
 const ARTIFACTS_DIR = process.env.ARTIFACTS_DIR ?? 'artifacts';
@@ -268,7 +270,8 @@ app.post('/api/sessions/:id/messages', async (req, res) => {
         sessions.append(
           sessionId,
           'assistant',
-          `Nothing in the catalog does this. ${route.reason}\n\nTo record a new capability:\n    npm run discover -- --goal "${goal}"`,
+          `Nothing in the catalog does this. ${route.reason}`,
+          { offerDiscovery: goal },
         ),
       );
       return res.json(emitted);
@@ -320,6 +323,125 @@ app.post('/api/sessions/:id/messages', async (req, res) => {
     emitted.push(sessions.append(sessionId, 'system', `Error: ${(err as Error).message}`));
     res.json(emitted);
   }
+});
+
+// ---------------------------------------------------------------------------
+// Discovery — expensive, so confirmed and streamed rather than fire-and-forget
+// ---------------------------------------------------------------------------
+
+/**
+ * Record a new capability.
+ *
+ * Deliberately a separate, explicit call rather than something the chat does on its own
+ * when nothing matches. A discovery run drives a live application for minutes and costs
+ * real money; starting one because a match was fuzzy is the wrong default. The chat
+ * offers it, a human presses it.
+ */
+app.post('/api/sessions/:id/discover', async (req, res) => {
+  const sessionId = req.params.id;
+  const goal = String(req.body.goal ?? '').trim();
+  if (!goal) return res.status(400).json({ error: 'no goal' });
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.json([sessions.append(sessionId, 'system', 'ANTHROPIC_API_KEY is not set — discovery needs a model.')]);
+  }
+
+  sessions.append(sessionId, 'system', `Recording a new capability for: ${goal}`);
+  announceRun({ runId: 'discovery', capabilityId: '(recording a new capability)' });
+
+  try {
+    const result = await discover({
+      goal,
+      entryUrl: process.env.TARGET_URL ?? 'http://localhost:3100',
+      appId: 'corevue',
+      vendor: 'meridian-systems',
+      policyPath: POLICY_PATH,
+      runsDir: RUNS_DIR,
+      headed: true,
+      maxSteps: 25,
+      timeoutMs: 300_000,
+      onFrame: pushFrame,
+      onProgress: (e) => {
+        // Streamed into the session as it happens, so the history shows HOW the
+        // capability was found, not just that it was.
+        if (e.kind === 'thinking') sessions.append(sessionId, 'assistant', e.text);
+        else sessions.append(sessionId, 'system', `${e.kind}: ${e.text}`);
+      },
+    });
+    announceRun(null);
+
+    if (result.status !== 'success') {
+      return res.json([
+        sessions.append(
+          sessionId,
+          'assistant',
+          `Could not record this capability — ${result.status}: ${result.reason}`,
+        ),
+      ]);
+    }
+
+    // Never overwrite an existing version; a capability's history is append-only.
+    const { artifact } = result;
+    const dir = join(ARTIFACTS_DIR, artifact.capability.id);
+    mkdirSync(dir, { recursive: true });
+    const existing = readdirSync(dir).filter((f) => /^v\d+\.json$/.test(f)).map((f) => Number(f.slice(1, -5)));
+    if (existing.length) artifact.capability.version = Math.max(...existing) + 1;
+    writeFileSync(join(dir, `v${artifact.capability.version}.json`), JSON.stringify(artifact, null, 2));
+
+    return res.json([
+      sessions.append(
+        sessionId,
+        'assistant',
+        `Recorded ${artifact.capability.id} v${artifact.capability.version} as a DRAFT — ` +
+          `${artifact.steps.length} steps, inputs: ${Object.keys(artifact.inputs).join(', ') || 'none'}, ` +
+          `outputs: ${Object.keys(artifact.outputs).join(', ') || 'none'}.\n\n` +
+          `An LLM wrote this and nobody has reviewed it, so it cannot be invoked yet. ` +
+          `Review it, measure it, then approve.`,
+        { capabilityId: artifact.capability.id, capabilityVersion: artifact.capability.version },
+      ),
+    ]);
+  } catch (err) {
+    announceRun(null);
+    return res.json([sessions.append(sessionId, 'system', `Discovery failed: ${(err as Error).message}`)]);
+  }
+});
+
+/** Measure a capability from the UI — the evidence the approval gate wants. */
+app.post('/api/capabilities/:id/measure', async (req, res) => {
+  const artifact = catalog.get(req.params.id, req.body.version ? Number(req.body.version) : undefined);
+  if (!artifact) return res.status(404).json({ error: 'no such capability' });
+  try {
+    const report = await measureStability({
+      artifact,
+      inputs: req.body.inputs ?? {},
+      runs: Number(req.body.runs ?? 5),
+      policyPath: POLICY_PATH,
+      runsDir: RUNS_DIR,
+      interventionsDir: INTERVENTIONS_DIR,
+      onFrame: undefined,
+    } as never);
+    saveReport(STABILITY_DIR, report);
+    res.json(report);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+/** Promote a draft — refused unless the measurement supports it. */
+app.post('/api/capabilities/:id/approve', (req, res) => {
+  const artifact = catalog.get(req.params.id, req.body.version ? Number(req.body.version) : undefined);
+  if (!artifact) return res.status(404).json({ error: 'no such capability' });
+
+  const advice = promotionAdvice(loadReport(STABILITY_DIR, artifact.capability.id, artifact.capability.version));
+  if (!advice.ok && !req.body.force) {
+    return res.status(409).json({ error: advice.note, needsForce: true });
+  }
+
+  artifact.capability.status = 'approved';
+  writeFileSync(
+    join(ARTIFACTS_DIR, artifact.capability.id, `v${artifact.capability.version}.json`),
+    JSON.stringify(artifact, null, 2),
+  );
+  res.json({ ok: true, note: advice.note });
 });
 
 // ---------------------------------------------------------------------------
