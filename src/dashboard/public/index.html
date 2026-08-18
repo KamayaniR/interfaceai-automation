@@ -16,7 +16,11 @@
            display:flex; align-items:center; gap:14px; }
   header h1 { margin:0; font-size:15px; font-weight:600; }
   header .muted { color:var(--muted); font-weight:400; }
-  #bell { margin-left:auto; background:#3a2a12; color:var(--warn); border:1px solid #6b4d1a;
+  #paceWrap { margin-left:auto; color:var(--muted); font-size:12px;
+              display:flex; align-items:center; gap:6px; }
+  #pace { background:var(--panel); color:var(--text); border:1px solid var(--line);
+          border-radius:5px; padding:4px 7px; font:inherit; font-size:12px; }
+  #bell { margin-left:12px; background:#3a2a12; color:var(--warn); border:1px solid #6b4d1a;
           padding:5px 12px; border-radius:14px; font-size:12px; font-weight:600; display:none;
           cursor:pointer; }
   main { flex:1; display:flex; min-height:0; }
@@ -120,6 +124,15 @@
 <body>
 <header>
   <h1>Capability Dashboard <span class="muted">— interface.ai computer-use automation</span></h1>
+  <label id="paceWrap" title="Adds idle time so the live session is watchable. Presentation only — it cannot change what a step does.">
+    Speed
+    <select id="pace">
+      <option value="0">Full speed</option>
+      <option value="400">Slow</option>
+      <option value="800" selected>Demo</option>
+      <option value="1500">Very slow</option>
+    </select>
+  </label>
   <button id="bell">1 intervention needs you</button>
 </header>
 

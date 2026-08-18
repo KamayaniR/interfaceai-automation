@@ -11,7 +11,7 @@
  * for UIAutomation and reuse everything above this file unchanged.
  */
 
-import { PACE_MS } from '../../obs/pace.ts';
+import { paceMs } from '../../obs/pace.ts';
 import { chromium, type Browser, type BrowserContext, type Page, type Frame } from 'playwright';
 import { randomUUID } from 'node:crypto';
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -81,7 +81,7 @@ export class WebSurface implements Surface {
     s.browser = await chromium.launch({
       headless: !opts.headed,
       // Demo pacing only; 0 in tests and in production. See obs/pace.ts.
-      slowMo: PACE_MS,
+      slowMo: paceMs(),
       args: opts.headed ? [`--remote-debugging-port=${opts.cdpPort ?? 9222}`] : [],
     });
     s.context = await s.browser.newContext({ viewport: { width: 1280, height: 900 } });

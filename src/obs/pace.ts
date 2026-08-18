@@ -20,12 +20,25 @@
  * passing one, since checkpoints poll to their own timeout regardless.
  */
 
-const raw = Number(process.env.REPLAY_PACE_MS ?? 0);
+const clamp = (n: number): number => (Number.isFinite(n) && n > 0 ? Math.min(n, 5000) : 0);
 
-/** Milliseconds of deliberate slowdown. 0 disables it entirely. */
-export const PACE_MS = Number.isFinite(raw) && raw > 0 ? Math.min(raw, 5000) : 0;
+/**
+ * Settable rather than constant, because the dashboard chooses per run: the env var is
+ * the default for CLI use, and a viewer watching a live session needs to change speed
+ * without restarting the server. Read at browser launch, so it applies from the next run
+ * onward and never mutates one already in flight.
+ */
+let current = clamp(Number(process.env.REPLAY_PACE_MS ?? 0));
+
+export function paceMs(): number {
+  return current;
+}
+
+export function setPaceMs(ms: number): void {
+  current = clamp(ms);
+}
 
 /** Pause between steps so the previous one stays readable. No-op when pacing is off. */
 export async function pace(): Promise<void> {
-  if (PACE_MS > 0) await new Promise((r) => setTimeout(r, PACE_MS));
+  if (current > 0) await new Promise((r) => setTimeout(r, current));
 }

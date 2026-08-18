@@ -128,10 +128,15 @@ Cached to `routes/cache.json` (gitignored — it is derived, and rebuilds itself
 Replay runs at machine speed — a five-step capability finishes in about 2.5s, which is
 correct for production and useless for watching. `REPLAY_PACE_MS` adds deliberate delay:
 
+In the dashboard it is the **Speed** control in the header, chosen per turn — no restart.
+On the CLI it is an env var:
+
 ```bash
-REPLAY_PACE_MS=800 npm run dashboard      # then use the chat as normal
 REPLAY_PACE_MS=800 npm run replay -- --capability member.read-savings-balance --input memberId=100442
 ```
+
+Measured through the dashboard, both turns cache hits so no model call skews it:
+`Full speed` 5.4s vs `Demo` 17.6s.
 
 It slows two things, because slowing either alone is still unwatchable: `slowMo` on the
 browser makes each click and keystroke a visible event, and a pause between steps keeps a

@@ -34,6 +34,7 @@ import { InterventionQueue } from '../escalation/broker.ts';
 import { SessionStore } from './sessions.ts';
 import { proposeRoute, applyGuardrails, CONTEXT_TURNS } from '../orchestrator/router.ts';
 import { RouteCache, catalogFingerprint } from '../orchestrator/route-cache.ts';
+import { setPaceMs } from '../obs/pace.ts';
 import { ReplayEngine } from '../replay/engine.ts';
 import { verifyContentHash } from '../schema/hash.ts';
 import { discover } from '../agent/loop.ts';
@@ -236,6 +237,10 @@ app.get('/api/sessions/:id', (req, res) => res.json(sessions.messages(req.params
 app.post('/api/sessions/:id/messages', async (req, res) => {
   const sessionId = req.params.id;
   const goal = String(req.body.content ?? '').trim();
+  // Presentation speed, chosen per turn by the viewer. Adds idle time only — it cannot
+  // change what a step does, and it is read at browser launch so it never mutates a run
+  // already in flight. See obs/pace.ts.
+  setPaceMs(Number(req.body.paceMs ?? 0));
   if (!goal) return res.status(400).json({ error: 'empty message' });
 
   sessions.append(sessionId, 'user', goal);

@@ -335,7 +335,8 @@ $('#composer').onsubmit = async (e) => {
     const res = await fetch(`/api/sessions/${sessionId}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
+      // Presentation speed for the live pane, chosen per turn. Never affects behaviour.
+      body: JSON.stringify({ content, paceMs: Number($('#pace')?.value ?? 0) }),
     });
     (await res.json()).forEach(renderMessage);
   } catch (err) {
