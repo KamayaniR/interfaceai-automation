@@ -33,6 +33,12 @@
       "required": true,
       "pattern": "^\\d{6}$",
       "sensitivity": "pii"
+    },
+    "expectedName": {
+      "type": "string",
+      "description": "Optional. Part of the member's name as the caller knows it, e.g. \"Rosa\". When supplied, the capability asserts the record on screen belongs to that person before reading anything off it, and returns MEMBER_NAME_MISMATCH if it does not. Omit it to skip the check.",
+      "required": false,
+      "sensitivity": "pii"
     }
   },
   "outputs": {
@@ -43,7 +49,7 @@
     },
     "memberName": {
       "type": "string",
-      "description": "Name on the member record, used to confirm the correct record was read.",
+      "description": "Name on the member record that was actually read, as displayed by CoreVue.",
       "sensitivity": "pii"
     }
   },
@@ -52,6 +58,10 @@
       "code": "MEMBER_NOT_FOUND",
       "description": "No member record exists for the supplied member number, so no balances can be returned.",
       "terminal": true
+    },
+    {
+      "code": "MEMBER_NAME_MISMATCH",
+      "description": "The member number resolved to a different person than the caller named. Reading this record would be acting on the wrong account, so the run stops without returning a balance."
     }
   ],
   "preconditions": [],
@@ -114,6 +124,26 @@
       },
       "risk": "safe",
       "onCondition": [
+        {
+          "when": {
+            "id": "member-name-mismatch",
+            "anyOf": [
+              {
+                "kind": "text-absent",
+                "text": "{{expectedName}}",
+                "framePath": [
+                  "content"
+                ],
+                "ignoreCase": true
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NAME_MISMATCH",
+            "message": "The record on screen is not the person the caller named. Stopping before reading anything off the wrong account."
+          }
+        },
         {
           "when": {
             "id": "member-not-found",
@@ -412,6 +442,36 @@
       ]
     },
     {
+      "id": "s06b",
+      "intent": "Read the name on the member record that was actually opened",
+      "action": {
+        "kind": "extract",
+        "outputName": "memberName",
+        "from": "text"
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "label-proximity",
+            "labelText": "Name",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "anchor-relative",
+            "anchorText": "Name",
+            "role": "text",
+            "offset": 0
+          }
+        ]
+      },
+      "risk": "safe",
+      "onCondition": []
+    },
+    {
       "id": "s07",
       "intent": "Record the checking (D1) current balance that was asked for",
       "action": {
@@ -525,6 +585,6 @@
     "runId": "7d2842e6",
     "discoveredAt": "2026-08-17T04:45:52.786Z",
     "transcriptDigest": "432597895a80d351",
-    "contentHash": "sha256:fbda9fd6b4ed82b85985d4282beba434"
+    "contentHash": "sha256:bf79c44b84dab0889874a814decf51fc"
   }
 }

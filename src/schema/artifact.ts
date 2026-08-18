@@ -123,13 +123,21 @@ export type TargetRef = z.infer<typeof TargetRef>;
 export const Checkpoint = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('text-present'),
+    /**
+     * May contain `{{param}}`, resolved against validated inputs at replay time. That is
+     * what lets a capability assert something about the CALLER's intent — "the record on
+     * screen is the one you asked for" — rather than only about the app's own chrome.
+     */
     text: z.string(),
     framePath: z.array(z.string()).default([]),
+    /** Legacy apps shout: "ALVAREZ, ROSA M" should match a caller who typed "Rosa". */
+    ignoreCase: z.boolean().default(false),
   }),
   z.object({
     kind: z.literal('text-absent'),
     text: z.string(),
     framePath: z.array(z.string()).default([]),
+    ignoreCase: z.boolean().default(false),
   }),
   z.object({
     kind: z.literal('element-present'),
@@ -168,7 +176,18 @@ export const ConditionMatcher = z.object({
   /** Any of these matching counts as a hit. */
   anyOf: z.array(
     z.discriminatedUnion('kind', [
-      z.object({ kind: z.literal('text-present'), text: z.string() }),
+      z.object({ kind: z.literal('text-present'), text: z.string(), ignoreCase: z.boolean().default(false) }),
+      /**
+       * The absence of something is a condition too. Asserting that the record on screen
+       * belongs to the person the caller named can only be expressed this way: "fire when
+       * the expected name is NOT here". Without it the wrong-account check is unstatable.
+       */
+      z.object({
+        kind: z.literal('text-absent'),
+        text: z.string(),
+        framePath: z.array(z.string()).default([]),
+        ignoreCase: z.boolean().default(false),
+      }),
       z.object({ kind: z.literal('url-matches'), pattern: z.string() }),
       z.object({ kind: z.literal('element-present'), target: TargetRef }),
     ]),

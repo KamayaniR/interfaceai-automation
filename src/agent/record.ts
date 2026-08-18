@@ -140,6 +140,7 @@ function checkpointFor(
   if (isLast) {
     return {
       kind: 'text-present',
+      ignoreCase: false,
       text: successText,
       framePath: [],
       timeoutMs: 10_000,
@@ -180,6 +181,7 @@ function checkpointFor(
 
   return {
     kind: 'text-present',
+    ignoreCase: false,
     text: assertion,
     framePath: [],
     timeoutMs: 10_000,
@@ -247,7 +249,7 @@ export function recordArtifact(opts: RecordOptions): CapabilityArtifact {
     .map((o) => ({
       when: {
         id: o.code.toLowerCase().replace(/_/g, '-'),
-        anyOf: [{ kind: 'text-present' as const, text: o.detect_text }],
+        anyOf: [{ kind: 'text-present' as const, text: o.detect_text, ignoreCase: false }],
       },
       then: { then: 'business-outcome' as const, outcomeCode: o.code },
     }));
@@ -320,6 +322,7 @@ export function recordArtifact(opts: RecordOptions): CapabilityArtifact {
     steps,
     checkpoint: {
       kind: 'text-present',
+      ignoreCase: false,
       text: contract.success_text,
       framePath: [],
       timeoutMs: 15_000,

@@ -115,6 +115,24 @@ else
 fi
 
 echo
+echo "── wrong-account protection ────────────────────────────────"
+OUT=$(npx tsx --env-file-if-exists=.env src/cli.ts replay --capability member.read-savings-balance \
+        --input memberId=100443 --input expectedName=Rosa 2>&1)
+if grep -q "MEMBER_NAME_MISMATCH" <<<"$OUT" && ! grep -q "savingsBalance" <<<"$OUT"; then
+  ok "a member number that resolves to someone else stops WITHOUT returning their balance"
+else
+  bad "wrong-account check" "MEMBER_NAME_MISMATCH and no balance" "$(grep -E '^STATUS|^OUTCOME' <<<"$OUT" | tr '\n' ' ')"
+fi
+
+OUT=$(npx tsx --env-file-if-exists=.env src/cli.ts replay --capability member.read-savings-balance \
+        --input memberId=100442 --input expectedName=Rosa 2>&1)
+if grep -q '"savingsBalance"' <<<"$OUT" && grep -q "ALVAREZ, ROSA M" <<<"$OUT"; then
+  ok "...and the matching name still succeeds, returning who it read"
+else
+  bad "name match succeeds" "balance + memberName" "$(grep -E '^STATUS' <<<"$OUT")"
+fi
+
+echo
 echo "── artifact integrity ──────────────────────────────────────"
 CAPFILE=artifacts/member.read-savings-balance/v1.json
 cp "$CAPFILE" /tmp/verify-artifact-backup.json

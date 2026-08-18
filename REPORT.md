@@ -177,6 +177,19 @@ version while resolving another. All are written up in `evidence/README.md`, and
 diagnosable in minutes *because* the result contract reports which step, what was expected
 and what was observed.
 
+
+**Identity is asserted, not assumed.** A capability whose contract is
+`memberId -> savingsBalance` will happily answer "what is Rosa's balance?" with someone
+else's money if the caller supplies the wrong number — the name never enters the contract,
+so nothing downstream can notice. That is the canonical banking failure, and no amount of
+router intelligence fixes it: a model comparing names is a suggestion, a checkpoint is
+enforcement. So the capability now takes an optional `expectedName`, asserts it against
+the record on screen *before* extracting anything, and returns `MEMBER_NAME_MISMATCH`
+without a balance when it does not match. It also returns `memberName` unconditionally, so
+every answer says which record produced it. The check is optional and inert when omitted,
+because making it required would break every existing caller — and a check nobody can
+satisfy gets disabled rather than fixed.
+
 ## 4. Heterogeneity & multi-tenant
 
 **Surface abstraction.** `perceive()` yields elements with a role, name, value and frame path

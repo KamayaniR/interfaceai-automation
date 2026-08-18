@@ -296,14 +296,14 @@ export class ReplayEngine {
       }
 
       if (step.waitFor) {
-        const outcome = await verifyCheckpoint(this.surface, step.waitFor);
+        const outcome = await verifyCheckpoint(this.surface, this.interpolateCheckpoint(step.waitFor));
         if (!outcome.passed) {
           // One last condition sweep: a slow app may only have rendered its error
           // banner while the checkpoint was polling.
           const late = await this.dispatchConditions(step, entry, index, total);
           if (late === 'recovered') {
             await this.act(step, entry, index, total);
-            const retry = await verifyCheckpoint(this.surface, step.waitFor);
+            const retry = await verifyCheckpoint(this.surface, this.interpolateCheckpoint(step.waitFor));
             if (retry.passed) return;
           }
           await this.captureFailureEvidence(`step-${step.id}`);
@@ -426,7 +426,7 @@ export class ReplayEngine {
     total: number,
   ): Promise<'none' | 'recovered'> {
     for (const rule of step.onCondition) {
-      if (!(await detectCondition(this.surface, rule.when))) continue;
+      if (!(await detectCondition(this.surface, this.interpolateMatcher(rule.when)))) continue;
 
       entry.conditionFired = rule.when.id;
       // Bind to a local so TypeScript narrows the discriminated union across the switch.
@@ -476,7 +476,7 @@ export class ReplayEngine {
               if (sub.waitFor) await verifyCheckpoint(this.surface, sub.waitFor);
             }
 
-            if (!(await detectCondition(this.surface, rule.when))) {
+            if (!(await detectCondition(this.surface, this.interpolateMatcher(rule.when)))) {
               this.logger.log('recovery.succeeded', { stepId: step.id, condition: rule.when.id, attempt });
               return 'recovered';
             }
@@ -605,22 +605,48 @@ export class ReplayEngine {
   // Helpers
   // -------------------------------------------------------------------------
 
-  /** Resolve `{{param}}` placeholders against validated inputs. */
+  /**
+   * Resolve `{{param}}` placeholders against validated inputs.
+   *
+   * `optional` is used for checkpoints. An assertion built from an input the caller did
+   * not supply must go quiet, not blow up: `text-absent "{{expectedName}}"` with no
+   * expectedName resolves to an empty needle, which `contains()` treats as always found,
+   * so the assertion is inert. Actions keep the strict behaviour — a step that types an
+   * undeclared parameter is a contract violation, not a no-op.
+   */
+  private sub(text: string, optional = false): string {
+    return text.replace(/\{\{(\w+)\}\}/g, (_m, key: string) => {
+      const value = this.opts.inputs[key];
+      if (value === undefined) {
+        if (optional) return '';
+        throw new Terminate('failure', {
+          class: 'contract_violation',
+          stepId: null,
+          message: `step references undeclared parameter "{{${key}}}"`,
+          expected: `a declared input`,
+          observed: key,
+        });
+      }
+      return value;
+    });
+  }
+
+  /** Same, for every clause of a condition matcher. */
+  private interpolateMatcher<T extends { anyOf: unknown[] }>(m: T): T {
+    return { ...m, anyOf: m.anyOf.map((c) => this.interpolateCheckpoint(c)) };
+  }
+
+  /** Resolve placeholders inside a checkpoint's text, so it can assert on caller intent. */
+  private interpolateCheckpoint<T>(cp: T): T {
+    const c = cp as unknown as { kind?: string; text?: string };
+    if (c && (c.kind === 'text-present' || c.kind === 'text-absent') && typeof c.text === 'string') {
+      return { ...(cp as object), text: this.sub(c.text, true) } as T;
+    }
+    return cp;
+  }
+
   private interpolate(action: Action): Action {
-    const sub = (s: string): string =>
-      s.replace(/\{\{(\w+)\}\}/g, (_m, key: string) => {
-        const value = this.opts.inputs[key];
-        if (value === undefined) {
-          throw new Terminate('failure', {
-            class: 'contract_violation',
-            stepId: null,
-            message: `step references undeclared parameter "{{${key}}}"`,
-            expected: `a declared input`,
-            observed: key,
-          });
-        }
-        return value;
-      });
+    const sub = (s: string): string => this.sub(s);
 
     if (action.kind === 'type') return { ...action, value: sub(action.value) };
     if (action.kind === 'select') return { ...action, value: sub(action.value) };
