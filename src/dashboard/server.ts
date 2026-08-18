@@ -34,7 +34,7 @@ import { InterventionQueue } from '../escalation/broker.ts';
 import { SessionStore } from './sessions.ts';
 import { proposeRoute, applyGuardrails, CONTEXT_TURNS } from '../orchestrator/router.ts';
 import { RouteCache, catalogFingerprint } from '../orchestrator/route-cache.ts';
-import { setPaceMs } from '../obs/pace.ts';
+import { setPaceMs, paceMs } from '../obs/pace.ts';
 import { ReplayEngine } from '../replay/engine.ts';
 import { verifyContentHash } from '../schema/hash.ts';
 import { discover } from '../agent/loop.ts';
@@ -110,7 +110,16 @@ app.get('/api/screen', (req, res) => {
 });
 
 app.use(express.json());
-app.use(express.static(join(here, 'public')));
+// No caching. A stale app.js against a fresh index.html is the worst kind of bug here:
+// the new control renders, silently sends nothing, and the server falls back to its
+// default — which reads as "the feature does not work" rather than "reload the page".
+app.use(
+  express.static(join(here, 'public'), {
+    etag: false,
+    lastModified: false,
+    setHeaders: (res) => res.setHeader('Cache-Control', 'no-store'),
+  }),
+);
 
 // ---------------------------------------------------------------------------
 // Catalog
@@ -241,6 +250,7 @@ app.post('/api/sessions/:id/messages', async (req, res) => {
   // change what a step does, and it is read at browser launch so it never mutates a run
   // already in flight. See obs/pace.ts.
   setPaceMs(Number(req.body.paceMs ?? 0));
+  console.log(`[chat] pace=${paceMs()}ms  goal=${goal.slice(0, 60)}`);
   if (!goal) return res.status(400).json({ error: 'empty message' });
 
   sessions.append(sessionId, 'user', goal);
