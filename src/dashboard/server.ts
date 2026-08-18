@@ -384,6 +384,11 @@ app.post('/api/sessions/:id/discover', async (req, res) => {
 
   sessions.append(sessionId, 'system', `Recording a new capability for: ${goal}`);
   announceRun({ runId: 'discovery', capabilityId: '(recording a new capability)' });
+  // Discovery has no fixed step list — it is exploring. Reset the pane so it stops
+  // showing the previous REPLAY's steps, which is worse than showing nothing: the
+  // ticks look like this run's progress.
+  pushStep({ phase: 'reset', mode: 'discovery' });
+  let explored = 0;
 
   try {
     const result = await discover({
@@ -402,6 +407,20 @@ app.post('/api/sessions/:id/discover', async (req, res) => {
         // capability was found, not just that it was.
         if (e.kind === 'thinking') sessions.append(sessionId, 'assistant', e.text);
         else sessions.append(sessionId, 'system', `${e.kind}: ${e.text}`);
+
+        // The model's actions ARE the step trace during discovery. No total: it does
+        // not know how many steps the flow has until it has found one.
+        if (e.kind === 'action' || e.kind === 'refused') {
+          explored += 1;
+          pushStep({
+            phase: 'end',
+            index: explored,
+            id: `explore-${explored}`,
+            intent: e.text,
+            risk: 'safe',
+            status: e.kind === 'refused' ? 'failed' : 'ok',
+          });
+        }
       },
     });
     announceRun(null);

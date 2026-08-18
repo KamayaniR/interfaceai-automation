@@ -465,7 +465,18 @@ screen.addEventListener('frame', (e) => {
 screen.addEventListener('step', (e) => {
   const s = JSON.parse(e.data);
   const list = $('#steps');
+
+  // Explicit reset, sent when a discovery run begins. Without it the pane keeps the
+  // previous replay's green ticks, which read as this run's progress.
+  if (s.phase === 'reset') {
+    list.innerHTML = '';
+    if (s.mode === 'discovery') {
+      list.append(el('div', 'step exploring', 'exploring — no fixed step list yet'));
+    }
+    return;
+  }
   if (s.index === 1 && s.phase === 'start') list.innerHTML = '';
+  list.querySelector('.exploring')?.remove();
 
   let row = list.querySelector(`[data-step="${s.id}"]`);
   if (!row) {
@@ -474,7 +485,8 @@ screen.addEventListener('step', (e) => {
     list.append(row);
   }
   row.className = `step ${s.phase === 'start' ? 'running' : s.status ?? 'ok'}`;
-  row.textContent = `${s.index}/${s.total}  ${s.intent}`;
+  // Discovery sends no total — it does not know how long the flow is until it finds one.
+  row.textContent = `${s.index}${s.total ? `/${s.total}` : ''}  ${s.intent}`;
   if (s.risk === 'irreversible') row.classList.add('irreversible');
   row.scrollIntoView({ block: 'nearest' });
 });

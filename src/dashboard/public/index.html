@@ -69,6 +69,8 @@
   .step.failed { color:var(--bad); }
   .step.failed::before { content:'✕'; color:var(--bad); }
   .step.irreversible { color:#ffb38a; }
+  .step.exploring { color:var(--muted); font-style:italic; }
+  .step.exploring::before { content:'…'; }
 
   #liveBody { flex:1; display:flex; align-items:flex-start; justify-content:center;
               padding:10px; overflow:auto; }
