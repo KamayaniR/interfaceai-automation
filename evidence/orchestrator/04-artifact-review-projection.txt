@@ -1,41 +1,59 @@
 
+> interfaceai-automation@1.0.0 catalog
+> tsx --env-file-if-exists=.env src/cli.ts catalog review member.read-savings-balance
+
+
 ──────────────────────────────────────────────────────────────────────────
 CAPABILITY  Read member savings balance
             member.read-savings-balance  v1  ·  APPROVED
 APP         meridian-systems/corevue
 RECORDED BY hand-authored-fixture  on 2026-08-13
 INTEGRITY   content hash verified
+STABILITY   stable — consistently success across 10 runs, every step on its preferred locator
+            measured with {"memberId":"100442"} on 2026-08-17
+PROMOTION   safe to approve
 
 Look up a member by their 6-digit member number in CoreVue and return the current balance of their S1 savings share account.
 
 TAKES
   memberId           string  matching ^\d{6}$  [pii]
                      The member's 6-digit CoreVue member number.
+  expectedName       string  [pii]
+                     Optional. Part of the member's name as the caller knows it, e.g. "Rosa". When supplied, the capability asserts the record on screen belongs to that person before reading anything off it, and returns MEMBER_NAME_MISMATCH if it does not. Omit it to skip the check.
+  operatorId         string  [secret]
+                     Operator ID for the CoreVue sign-on. Supplied by the runtime environment, never by the caller.
+  operatorPassword   string  [secret]
+                     Password for the CoreVue operator sign-on. Supplied by the runtime environment, never by the caller.
 
 RETURNS
   savingsBalance     money  [pii]  — Current balance of the S1 savings share account, without the currency symbol.
+  memberName         string  [pii]  — Name on the member record that was actually read, as displayed by CoreVue.
 
 OR ANSWERS WITH
   MEMBER_NOT_FOUND         No member record exists with that member number. This is a legitimate answer, not a failure.
   MEMBER_NUMBER_INVALID    The member number was rejected by the application's own validation.
   ACCESS_DENIED            The operator's role is not authorised to view this member record.
+  MEMBER_NAME_MISMATCH     The member number resolved to a different person than the caller named. Reading this record would be acting on the wrong account, so the run stops without returning a balance.
 
-STEPS  (7)
+STEPS  (8)
   1  open http://localhost:3100
      verify: "Operator Sign On" appears
-  2  type svc_automation into textbox "Operator ID"  (content)   [3 locators]
-  3  type not-a-real-password into textbox "Password"  (content)   [3 locators]
+  2  type {{operatorId}} into textbox "Operator ID"  (content)   [3 locators]
+  3  type {{operatorPassword}} into textbox "Password"  (content)   [3 locators]
   4  click button "Sign On"  (content)   [3 locators]
      verify: "Member Number" appears
   5  type {{memberId}} into textbox "Member Number"  (content)   [4 locators]
   6  click button "Search"  (content)   [3 locators]
      verify: "Member Detail" appears
+     if text-absent → returns MEMBER_NAME_MISMATCH
      if "No member record found matching that number." → returns MEMBER_NOT_FOUND
      if "Member Number must be exactly 6 digits." → returns MEMBER_NUMBER_INVALID
      if "SEC-0412" → returns ACCESS_DENIED
      if "Your session has expired" → recovers (4 steps, ≤2 attempts)
      if "Scheduled maintenance window begins" → recovers (1 step, ≤2 attempts)
-  7  read savingsBalance from the field labelled "Savings (S1) Current Balance"  (content)   [2 locators]
+     if "HTTP 500 — Internal Server Error" or "SqlSessionException" → escalates to a human
+  7  read memberName from the field labelled "Name"  (content)   [2 locators]
+  8  read savingsBalance from the field labelled "Savings (S1) Current Balance"  (content)   [2 locators]
 
 SUCCEEDS WHEN
   the Member Detail screen showing the S1 savings balance is displayed in the content frame

@@ -27,6 +27,22 @@
       "description": "Optional. Part of the member's name as the caller knows it, e.g. \"Rosa\". When supplied, the capability asserts the record on screen belongs to that person before reading anything off it, and returns MEMBER_NAME_MISMATCH if it does not. Omit it to skip the check.",
       "required": false,
       "sensitivity": "pii"
+    },
+    "operatorId": {
+      "type": "string",
+      "description": "Operator ID for the CoreVue sign-on. Supplied by the runtime environment, never by the caller.",
+      "required": true,
+      "sensitivity": "secret",
+      "source": "runtime",
+      "env": "COREVUE_OPERATOR_ID"
+    },
+    "operatorPassword": {
+      "type": "string",
+      "description": "Password for the CoreVue operator sign-on. Supplied by the runtime environment, never by the caller.",
+      "required": true,
+      "sensitivity": "secret",
+      "source": "runtime",
+      "env": "COREVUE_OPERATOR_PASSWORD"
     }
   },
   "outputs": {
@@ -88,7 +104,7 @@
       "intent": "Enter the operator ID into the sign-on form",
       "action": {
         "kind": "type",
-        "value": "svc_automation",
+        "value": "{{operatorId}}",
         "clearFirst": true
       },
       "target": {
@@ -131,7 +147,7 @@
       "intent": "Enter the operator password into the sign-on form",
       "action": {
         "kind": "type",
-        "value": "not-a-real-password",
+        "value": "{{operatorPassword}}",
         "clearFirst": true
       },
       "target": {
@@ -399,7 +415,7 @@
                 "intent": "Re-enter the operator ID after the session expired",
                 "action": {
                   "kind": "type",
-                  "value": "svc_automation",
+                  "value": "{{operatorId}}",
                   "clearFirst": true
                 },
                 "target": {
@@ -429,7 +445,7 @@
                 "intent": "Re-enter the operator password after the session expired",
                 "action": {
                   "kind": "type",
-                  "value": "not-a-real-password",
+                  "value": "{{operatorPassword}}",
                   "clearFirst": true
                 },
                 "target": {
@@ -660,6 +676,6 @@
     "runId": "fixture-0001",
     "discoveredAt": "2026-08-13T00:00:00.000Z",
     "transcriptDigest": "0000000000000000",
-    "contentHash": "sha256:0308353698e5dae0f5fab90d5c7b23fd"
+    "contentHash": "sha256:8e4b5f9b07460f2d7e3ff0ef7f56bb17"
   }
 }
