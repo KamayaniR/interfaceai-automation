@@ -210,6 +210,27 @@ export function applyGuardrails(proposed: ProposedRoute, catalog: Catalog, goal:
   // failure into a question the user can answer.
   const inputs = proposed.inputs ?? {};
   for (const [name, spec] of Object.entries(artifact.inputs)) {
+    // A caller-supplied secret is refused outright. Asking a person for a password
+    // through a chat window backed by an LLM puts it in conversation history and in a
+    // model's context, and no amount of downstream redaction takes it back out.
+    if (spec.sensitivity === 'secret' && spec.source !== 'runtime') {
+      return {
+        action: 'refuse',
+        reason:
+          `capability "${artifact.capability.id}" declares "${name}" as a caller-supplied secret. ` +
+          `Credentials must be supplied by the runtime (source: "runtime"), never requested from ` +
+          `a caller through an agent. Re-record or amend the artifact.`,
+      };
+    }
+
+    // Supplied by the environment, not by whoever is asking. If a model invented a
+    // value for one anyway, drop it rather than forward it: the engine will overwrite it
+    // from env, and echoing a guessed credential back through the logs helps nobody.
+    if (spec.source === 'runtime') {
+      delete inputs[name];
+      continue;
+    }
+
     const value = inputs[name];
     if (value === undefined) {
       if (!spec.required) continue;

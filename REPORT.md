@@ -270,6 +270,22 @@ has no idea whether a button labelled "Continue" commits a wire transfer. And **
 in evidence are not redacted**; a real deployment needs region masking driven by the same
 sensitivity metadata, and I wouldn't ship this to production without it.
 
+
+**Credentials are session infrastructure, not arguments.** The LLM-discovered capability
+parameterised the operator sign-on — reasonable, and wrong about who supplies it. A
+`required` + `secret` + caller-supplied input means an agent asks a person to type a
+service-account password into a chat window, where it lands in conversation history on
+disk and passes through a model's context; downstream redaction cannot take it back out.
+So `ParamSpec.source` distinguishes `caller` from `runtime`. Runtime inputs are hidden
+from the tool definition an agent sees, dropped by the router if a model fills them
+anyway, resolved by the engine from the environment, and validated on the same pre-flight
+path as everything else — a missing credential fails as `contract_violation` before a
+browser launches, not as a mystery sign-on failure three screens in. The recorder now
+reclassifies any `secret` at record time, so no discovered artifact can ship that shape
+again, and the router refuses one outright if it somehow does. This is the narrow version
+of the session-provider argument in §7: the same reasoning, applied to the one case that
+was actively unsafe.
+
 ## 7. Cuts
 
 **Left out deliberately:** desktop surface (interface defined, not implemented); multi-tenant

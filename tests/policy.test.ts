@@ -106,8 +106,8 @@ test('declared sensitivity drives per-input redaction', () => {
   const out = redactor.redactInputs(
     { memberId: '100442', accountType: 'S2' },
     {
-      memberId: { type: 'string', description: '', required: true, sensitivity: 'pii' },
-      accountType: { type: 'string', description: '', required: true, sensitivity: 'public' },
+      memberId: { type: 'string', description: '', required: true, sensitivity: 'pii', source: 'caller' as const },
+      accountType: { type: 'string', description: '', required: true, sensitivity: 'public', source: 'caller' as const },
     },
   );
   assert.equal(out.memberId, '****42');

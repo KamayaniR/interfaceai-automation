@@ -321,6 +321,24 @@ export const ParamSpec = z.object({
   pattern: z.string().optional(),
   sensitivity: z.enum(['public', 'pii', 'secret']).default('public'),
   example: z.string().optional(),
+  /**
+   * Who supplies this value.
+   *
+   *   caller  — comes from whoever invokes the capability. The default.
+   *   runtime — comes from the environment the automation runs in, never from the
+   *             caller. Credentials are the case that forces this to exist: a
+   *             discovered artifact quite reasonably parameterised the operator sign-on,
+   *             but a `required` + `secret` + caller-supplied input means an agent asks
+   *             a human to type a service-account password into a chat box, where it
+   *             lands in conversation history and passes through a model's context.
+   *             Sign-on is session infrastructure, not an argument.
+   *
+   * Runtime inputs are hidden from the tool definition, skipped by the router's
+   * required-argument check, and resolved by the engine from `env`.
+   */
+  source: z.enum(['caller', 'runtime']).default('caller'),
+  /** Environment variable holding the value, for `source: 'runtime'`. */
+  env: z.string().optional(),
 });
 export type ParamSpec = z.infer<typeof ParamSpec>;
 

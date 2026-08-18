@@ -195,6 +195,26 @@ export class ReplayEngine {
 
   private validateInputs(): void {
     const specs = this.opts.artifact.inputs;
+
+    // Resolve runtime-supplied inputs from the environment first, so they are validated
+    // on exactly the same path as everything else. A credential that never reaches the
+    // caller still has to be present and well-formed, and a missing one must fail here
+    // — before a browser is launched — rather than as a mystery sign-on failure later.
+    for (const [name, spec] of Object.entries(specs)) {
+      if (spec.source !== 'runtime') continue;
+      const fromEnv = spec.env ? process.env[spec.env] : undefined;
+      if (fromEnv === undefined) {
+        throw new Terminate('failure', {
+          class: 'contract_violation',
+          stepId: null,
+          message: `runtime input "${name}" is not set in the environment`,
+          expected: `environment variable ${spec.env ?? '(none declared)'} to be set`,
+          observed: 'unset',
+        });
+      }
+      this.opts.inputs[name] = fromEnv;
+    }
+
     for (const [name, spec] of Object.entries(specs)) {
       const value = this.opts.inputs[name];
       if (value === undefined) {

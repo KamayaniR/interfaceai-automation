@@ -17,15 +17,19 @@
   "inputs": {
     "operatorId": {
       "type": "string",
-      "description": "Operator ID used to sign on to the CoreVue console.",
+      "description": "Operator ID used to sign on to the CoreVue console. Supplied by the runtime environment, never by the caller.",
       "required": true,
-      "sensitivity": "secret"
+      "sensitivity": "secret",
+      "source": "runtime",
+      "env": "COREVUE_OPERATOR_ID"
     },
     "operatorPassword": {
       "type": "string",
-      "description": "Password for the operator sign-on.",
+      "description": "Password for the operator sign-on. Supplied by the runtime environment, never by the caller.",
       "required": true,
-      "sensitivity": "secret"
+      "sensitivity": "secret",
+      "source": "runtime",
+      "env": "COREVUE_OPERATOR_PASSWORD"
     },
     "memberNumber": {
       "type": "string",
@@ -585,6 +589,6 @@
     "runId": "7d2842e6",
     "discoveredAt": "2026-08-17T04:45:52.786Z",
     "transcriptDigest": "432597895a80d351",
-    "contentHash": "sha256:bf79c44b84dab0889874a814decf51fc"
+    "contentHash": "sha256:527c911a9bcde88a6f363c9891a11321"
   }
 }
