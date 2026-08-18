@@ -41,6 +41,15 @@ export interface Message {
     interventionId?: string;
     /** Set on a "nothing matches" message so the UI can offer to record one. */
     offerDiscovery?: string;
+    /**
+     * How the route was decided and what each half cost. Kept on the message rather than
+     * derived later, because "this one needed a model and that one did not" is a property
+     * of the turn, and a history that loses it cannot answer the question the design is
+     * built around.
+     */
+    routeSource?: 'model' | 'cache';
+    routeMs?: number;
+    replayMs?: number;
   };
 }
 

@@ -289,7 +289,12 @@ app.post('/api/sessions/:id/messages', async (req, res) => {
     // the previous turn, so it must go to the model.
     const cached = history.length === 0 ? cache.lookup(goal, artifacts) : null;
 
+    // Timed so the UI can show what routing actually cost. Without it, "no model call"
+    // is a claim the viewer has to take on trust — and the whole argument for recording
+    // capabilities is that replay is cheap, which is only convincing if it is visible.
+    const routeStarted = Date.now();
     const proposed = cached ?? (await proposeRoute(goal, catalog.toolDefs(), history));
+    const routeMs = Date.now() - routeStarted;
     if (!cached) cache.remember(goal, artifacts, proposed);
     const route = applyGuardrails(proposed, catalog, goal);
 
@@ -320,7 +325,12 @@ app.post('/api/sessions/:id/messages', async (req, res) => {
         sessionId,
         'assistant',
         `Using ${route.artifact.capability.id} v${route.artifact.capability.version} — ${route.reason}`,
-        { capabilityId: route.artifact.capability.id, capabilityVersion: route.artifact.capability.version },
+        {
+          capabilityId: route.artifact.capability.id,
+          capabilityVersion: route.artifact.capability.version,
+          routeSource: cached ? 'cache' : 'model',
+          routeMs,
+        },
       ),
     );
 
@@ -353,6 +363,11 @@ app.post('/api/sessions/:id/messages', async (req, res) => {
         capabilityVersion: result.capabilityVersion,
         status: result.status,
         outcomeCode: result.status === 'business_outcome' ? result.outcome.code : undefined,
+        // The comparison that makes the whole design legible: what the decision cost
+        // versus what the deterministic execution cost.
+        routeSource: cached ? 'cache' : 'model',
+        routeMs,
+        replayMs: result.durationMs,
       }),
     );
     res.json(emitted);

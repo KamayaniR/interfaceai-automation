@@ -208,6 +208,28 @@ function renderMessage(m) {
   wrap.append(el('div', 'who', m.role));
   wrap.append(el('div', 'body', m.content));
 
+  /**
+   * Where the decision came from, and what each half cost.
+   *
+   * Without this the central claim — that a recorded capability replays without a model
+   * — is invisible in the UI, and the viewer has to take it on trust or go read a
+   * terminal. Showing routing and replay separately is the point: they are different
+   * kinds of work, and only one of them needs an LLM.
+   */
+  if (m.refs?.routeSource) {
+    const cost = el('div', 'cost');
+    const src = el('span', `pill ${m.refs.routeSource}`,
+      m.refs.routeSource === 'cache' ? 'no model call' : 'model call');
+    cost.append(src);
+    if (m.refs.routeMs !== undefined) {
+      cost.append(el('span', null, `route ${(m.refs.routeMs / 1000).toFixed(2)}s`));
+    }
+    if (m.refs.replayMs !== undefined) {
+      cost.append(el('span', 'replay', `replay ${(m.refs.replayMs / 1000).toFixed(2)}s · no LLM`));
+    }
+    wrap.append(cost);
+  }
+
   // A history that can't link back to the run is just text. These are what make it
   // useful a week later.
   if (m.refs && (m.refs.runId || m.refs.capabilityId)) {
