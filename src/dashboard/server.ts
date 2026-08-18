@@ -402,6 +402,35 @@ app.post('/api/sessions/:id/discover', async (req, res) => {
       maxSteps: 25,
       timeoutMs: 300_000,
       onFrame: pushFrame,
+      /**
+       * A dead end is a question for a person, not a silent failure. Raise it on the
+       * same queue replay uses, so it reaches the operator through the same modal and
+       * the same notification — and block here, keeping the browser open, so whoever
+       * answers is looking at the live session rather than a screenshot of a dead one.
+       */
+      onDeadEnd: async (ctx) => {
+        const request = queue.create({
+          runId: ctx.runId,
+          capability: { id: '(none)', version: 0, name: 'Discovery dead end' },
+          goal: ctx.goal,
+          step: null,
+          reason: `Discovery could not record a capability: ${ctx.reason}`,
+          expected: 'a repeatable flow that satisfies the goal',
+          observed: ctx.reason,
+          inputs: {},
+          currentUrl: '',
+          screenshotPath: ctx.screenshotPath,
+        });
+        // No explicit announce: /api/events polls the queue every second and picks up
+        // anything open, which is the same path a replay escalation takes.
+        const resolved = await queue.waitForResolution(request.id, 600_000);
+        const action = resolved.status === 'resolved' ? 'demonstrated' : 'abort';
+        return {
+          action,
+          operator: resolved.resolution?.operator ?? 'unknown',
+          note: resolved.resolution?.note ?? '',
+        };
+      },
       onProgress: (e) => {
         // Streamed into the session as it happens, so the history shows HOW the
         // capability was found, not just that it was.
@@ -426,11 +455,23 @@ app.post('/api/sessions/:id/discover', async (req, res) => {
     announceRun(null);
 
     if (result.status !== 'success') {
+      // A dead end that a person has looked at is a different message from one nobody
+      // saw. Say which it was, and what they concluded.
+      const hr = result.humanReview;
+      const verdict = !hr
+        ? ''
+        : hr.action === 'abort'
+          ? `\n\nA human reviewed this and confirmed it cannot be done here. Note: ${hr.note || '(none)'}`
+          : hr.actionsRecorded > 0
+            // Only claim a demonstration when the human actually did something. Saying
+            // "demonstrated 0 actions" is worse than saying nothing.
+            ? `\n\nA human took the session and demonstrated ${hr.actionsRecorded} action(s), recorded in the run log for authoring a capability from. Note: ${hr.note || '(none)'}`
+            : `\n\nA human reviewed the live session and took no action. Note: ${hr.note || '(none)'}`;
       return res.json([
         sessions.append(
           sessionId,
           'assistant',
-          `Could not record this capability — ${result.status}: ${result.reason}`,
+          `Could not record this capability — ${result.status}: ${result.reason}${verdict}`,
         ),
       ]);
     }

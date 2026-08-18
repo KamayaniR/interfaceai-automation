@@ -409,9 +409,12 @@ function showIntervention(r) {
   card.append(input);
 
   const actions = el('div', 'modal-actions');
-  const resume = el('button', null, 'Resume automation');
+  // A discovery dead end has no automation to resume — the decision is whether the goal
+  // is achievable at all, so the buttons must ask that question instead.
+  const deadEnd = r.capability.id === '(none)';
+  const resume = el('button', null, deadEnd ? 'Done — I demonstrated it' : 'Resume automation');
   resume.onclick = () => resolve('resume');
-  const abort = el('button', 'ghost', 'Abort run');
+  const abort = el('button', 'ghost', deadEnd ? 'Confirm: not possible here' : 'Abort run');
   abort.onclick = () => resolve('abort');
   actions.append(resume, abort);
   card.append(actions);

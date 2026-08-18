@@ -147,6 +147,37 @@ verify`, and cannot mask a race — checkpoints poll to their own timeout regard
 waiting longer never turns a failing one into a passing one. Verified: the not-found path
 still reports `MEMBER_NOT_FOUND` under pacing, not a timeout.
 
+## A dead end is an escalation, not a shrug
+
+Discovery can fail to find a flow — either the app genuinely lacks the feature, or the
+model missed it. Both are questions for a person, and both used to end the same way: a
+message saying "could not record this capability", and a browser closing on the only
+session that could have answered either question.
+
+Now every dead-end exit — the model calling `stuck`, a safety-classifier refusal, the
+step limit, the timeout — raises a request on the **same intervention queue replay uses**,
+reaching the operator through the same modal and the same notification. The discovery
+request blocks while it is open, so the browser stays alive and whoever answers is looking
+at the live session rather than a screenshot of a dead one. The control token is ceded to
+`human` for the duration, so the same invariant holds: automation cannot act.
+
+The operator has two answers, and the buttons ask the real question rather than
+"resume/abort" — there is no automation to resume:
+
+- **Confirm: not possible here** — recorded as a human-verified negative.
+- **Done — I demonstrated it** — their actions in the browser are recorded into the run
+  log, for authoring a capability from.
+
+Verified end to end: a goal with no matching feature blocked for 70s holding the session,
+appeared as an open intervention, and returned the operator's note into the conversation.
+Both events are in the run log (`discovery.deadend.escalated` / `.resolved`) with the
+operator, the note, and the recorded actions.
+
+**What this deliberately does not do** is auto-author an artifact from the human's clicks.
+A demonstration has no declared inputs, outputs or business outcomes, and inventing them
+would produce exactly the plausible-but-wrong capability the approval gate exists to stop.
+The actions are captured as evidence; authoring stays a human step.
+
 ## Known gaps
 
 - **No auth.** Anyone reaching the port can resolve an intervention. Real deployment needs

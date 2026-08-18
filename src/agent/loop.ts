@@ -49,12 +49,40 @@ export interface DiscoverOptions {
   onProgress?: (event: { kind: 'thinking' | 'action' | 'refused' | 'done'; text: string }) => void;
   /** Live frames from the discovery session, for the same watcher. */
   onFrame?: (frame: string) => void;
+  /**
+   * Called when discovery reaches a dead end, BEFORE the browser closes.
+   *
+   * A dead end is not nothing — it is the system reporting that a goal cannot be met by
+   * the app as the model understands it. That is precisely a case for a person: either
+   * the feature genuinely does not exist and someone should confirm it, or it does and
+   * the model failed to find it, in which case a human can demonstrate the path while
+   * their actions are recorded. Returning `stuck` straight to the caller throws away the
+   * live session, which is the one thing that makes either resolution possible.
+   *
+   * The human holds the control token while this promise is pending, so the automation
+   * cannot act. If unset, discovery dead-ends silently, as before.
+   */
+  onDeadEnd?: (ctx: {
+    reason: string;
+    goal: string;
+    runId: string;
+    screenshotPath: string;
+  }) => Promise<{ action: 'abort' | 'demonstrated'; note: string; operator: string }>;
 }
 
 export type DiscoverResult =
   | { status: 'success'; artifact: CapabilityArtifact; runId: string; runDir: string }
-  | { status: 'stuck'; reason: string; runId: string; runDir: string }
-  | { status: 'exhausted'; reason: string; runId: string; runDir: string };
+  | { status: 'stuck'; reason: string; runId: string; runDir: string; humanReview?: HumanReview }
+  | { status: 'exhausted'; reason: string; runId: string; runDir: string; humanReview?: HumanReview };
+
+/** What a person concluded about a dead end, once they had looked at the live session. */
+export interface HumanReview {
+  action: 'abort' | 'demonstrated';
+  operator: string;
+  note: string;
+  /** Actions the human took in the browser while holding control. */
+  actionsRecorded: number;
+}
 
 /** Render an observation as the text block the model reads. */
 function renderObservation(obs: Observation, note?: string): string {
@@ -84,6 +112,43 @@ export async function discover(opts: DiscoverOptions): Promise<DiscoverResult> {
   const redactor = new Redactor(policy.redactionConfig);
   const logger = new RunLogger(runDir, runId, redactor);
   const control = new SessionControl();
+
+  /**
+   * Hand a dead end to a person while the session is still live.
+   *
+   * Returns what they concluded, or null when no handler is wired (CLI use), in which
+   * case discovery dead-ends exactly as it did before.
+   */
+  const escalateDeadEnd = async (reason: string): Promise<HumanReview | undefined> => {
+    if (!opts.onDeadEnd) return undefined;
+    const screenshotPath = logger.screenshotPath('dead-end');
+    await surface.screenshot(screenshotPath);
+    opts.onProgress?.({
+      kind: 'refused',
+      text: `dead end — handing to a human while the session is still open: ${reason}`.slice(0, 200),
+    });
+    logger.log('discovery.deadend.escalated', { reason });
+
+    // The invariant holds here exactly as it does in replay: while a human holds the
+    // token, the automation cannot act.
+    surface.setControl('human');
+    let verdict: { action: 'abort' | 'demonstrated'; note: string; operator: string };
+    try {
+      verdict = await opts.onDeadEnd({ reason, goal: opts.goal, runId, screenshotPath });
+    } finally {
+      surface.setControl('automation');
+    }
+
+    const actions = control.drainHumanActions();
+    logger.log('discovery.deadend.resolved', {
+      action: verdict.action,
+      operator: verdict.operator,
+      note: verdict.note,
+      actionsRecorded: actions.length,
+      actions,
+    });
+    return { ...verdict, actionsRecorded: actions.length };
+  };
 
   const client = new Anthropic();
   const surface = await WebSurface.launch({
@@ -124,7 +189,10 @@ export async function discover(opts: DiscoverOptions): Promise<DiscoverResult> {
 
     for (let step = 0; step < opts.maxSteps; step++) {
       if (Date.now() > deadline) {
-        return { status: 'exhausted', reason: `timed out after ${opts.timeoutMs}ms`, runId, runDir };
+        {
+          const reason = `timed out after ${opts.timeoutMs}ms`;
+          return { status: 'exhausted', reason, runId, runDir, humanReview: await escalateDeadEnd(reason) };
+        }
       }
 
       // Streamed, not a plain create(): a thinking turn at this budget can exceed the
@@ -170,7 +238,7 @@ export async function discover(opts: DiscoverOptions): Promise<DiscoverResult> {
           (details?.explanation ? `: ${details.explanation}` : '') +
           `. The whole fallback chain declined.`;
         logger.log('discovery.refused', { category: details?.category, explanation: details?.explanation });
-        return { status: 'stuck', reason, runId, runDir };
+        return { status: 'stuck', reason, runId, runDir, humanReview: await escalateDeadEnd(reason) };
       }
 
       messages.push({ role: 'assistant', content: response.content });
@@ -201,7 +269,7 @@ export async function discover(opts: DiscoverOptions): Promise<DiscoverResult> {
             ? `the model's turn was truncated by max_tokens before it emitted a tool call (blocks: ${response.content.map((b) => b.type).join(', ') || 'none'}). Raise max_tokens or lower effort.`
             : `model produced no tool call (stop_reason: ${response.stop_reason}, blocks: ${response.content.map((b) => b.type).join(', ') || 'none'})`;
         logger.log('discovery.stuck', { reason });
-        return { status: 'stuck', reason, runId, runDir };
+        return { status: 'stuck', reason, runId, runDir, humanReview: await escalateDeadEnd(reason) };
       }
 
       const toolResults: Anthropic.Beta.BetaToolResultBlockParam[] = [];
@@ -220,7 +288,8 @@ export async function discover(opts: DiscoverOptions): Promise<DiscoverResult> {
           const reason = String(input.reason ?? 'unspecified');
           await surface.screenshot(logger.screenshotPath('stuck'));
           logger.log('discovery.stuck', { reason });
-          return { status: 'stuck', reason, runId, runDir };
+          const humanReview = await escalateDeadEnd(reason);
+          return { status: 'stuck', reason, runId, runDir, humanReview };
         }
 
         if (use.name === 'finish') {
@@ -376,7 +445,10 @@ export async function discover(opts: DiscoverOptions): Promise<DiscoverResult> {
       messages.push({ role: 'user', content: toolResults });
     }
 
-    return { status: 'exhausted', reason: `reached the ${opts.maxSteps}-step limit`, runId, runDir };
+    {
+      const reason = `reached the ${opts.maxSteps}-step limit`;
+      return { status: 'exhausted', reason, runId, runDir, humanReview: await escalateDeadEnd(reason) };
+    }
   } finally {
     await surface.close();
   }
