@@ -454,6 +454,31 @@ screen.addEventListener('frame', (e) => {
   liveImg.src = `data:image/jpeg;base64,${e.data}`;
 });
 
+/**
+ * Step progress beside the pixels.
+ *
+ * Watching the frames alone does not explain a run — a paced replay holds a still image,
+ * then jumps, so the interesting part is over before you know which step it was. Naming
+ * the step as it starts is what turns the live pane from a screen recording into
+ * something you can follow.
+ */
+screen.addEventListener('step', (e) => {
+  const s = JSON.parse(e.data);
+  const list = $('#steps');
+  if (s.index === 1 && s.phase === 'start') list.innerHTML = '';
+
+  let row = list.querySelector(`[data-step="${s.id}"]`);
+  if (!row) {
+    row = el('div', 'step');
+    row.dataset.step = s.id;
+    list.append(row);
+  }
+  row.className = `step ${s.phase === 'start' ? 'running' : s.status ?? 'ok'}`;
+  row.textContent = `${s.index}/${s.total}  ${s.intent}`;
+  if (s.risk === 'irreversible') row.classList.add('irreversible');
+  row.scrollIntoView({ block: 'nearest' });
+});
+
 screen.addEventListener('run', (e) => {
   const run = JSON.parse(e.data);
   if (run) {

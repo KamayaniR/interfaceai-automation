@@ -56,6 +56,21 @@ export interface ReplayOptions {
   faultParam?: string;
   /** Optional live-frame sink, for a viewer watching this exact session. */
   onFrame?: (frame: string) => void;
+  /**
+   * Optional step-progress sink. Pixels alone do not explain a run: a paced replay
+   * shows a static screen, then an instant jump, which reads as "nothing, then magic".
+   * Naming the step as it starts is what makes the flow legible to someone watching.
+   * Presentation only — nothing in the engine branches on it.
+   */
+  onStep?: (e: {
+    phase: 'start' | 'end';
+    index: number;
+    total: number;
+    id: string;
+    intent: string;
+    risk: string;
+    status?: string;
+  }) => void;
 }
 
 /** Thrown internally to unwind to the top-level result builder. */
@@ -257,6 +272,14 @@ export class ReplayEngine {
     };
 
     this.logger.log('step.start', { stepId: step.id, intent: step.intent, risk: step.risk });
+    this.opts.onStep?.({
+      phase: 'start',
+      index: index + 1,
+      total,
+      id: step.id,
+      intent: step.intent,
+      risk: step.risk,
+    });
     // Idle time only, so the previous step's result stays on screen long enough to read.
     await pace();
 
@@ -298,6 +321,15 @@ export class ReplayEngine {
       entry.durationMs = Date.now() - started;
       this.trace.push(entry);
       this.logger.log('step.end', { stepId: step.id, status: entry.status, durationMs: entry.durationMs });
+      this.opts.onStep?.({
+        phase: 'end',
+        index: index + 1,
+        total,
+        id: step.id,
+        intent: step.intent,
+        risk: step.risk,
+        status: entry.status,
+      });
     }
   }
 

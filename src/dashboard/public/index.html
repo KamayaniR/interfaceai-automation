@@ -54,6 +54,22 @@
   #liveLabel { color:var(--muted); }
   /* Top-aligned and full-width: the app renders its content at the top of the
      viewport, so centring the frame leaves a band of dead space above it. */
+  /* The narration track for the live pane: which step, out of how many, right now. */
+  #steps { max-height:190px; overflow-y:auto; border-bottom:1px solid var(--line);
+           padding:6px 10px; font:12px/1.6 ui-monospace,monospace; }
+  #steps:empty { display:none; }
+  .step { color:var(--muted); padding:1px 0 1px 16px; position:relative; white-space:nowrap;
+          overflow:hidden; text-overflow:ellipsis; }
+  .step::before { content:'·'; position:absolute; left:3px; }
+  .step.running { color:var(--accent); font-weight:600; }
+  .step.running::before { content:'▸'; }
+  .step.ok::before { content:'✓'; color:var(--ok); }
+  .step.recovered { color:var(--warn); }
+  .step.recovered::before { content:'↻'; color:var(--warn); }
+  .step.failed { color:var(--bad); }
+  .step.failed::before { content:'✕'; color:var(--bad); }
+  .step.irreversible { color:#ffb38a; }
+
   #liveBody { flex:1; display:flex; align-items:flex-start; justify-content:center;
               padding:10px; overflow:auto; }
   #liveBody img { width:100%; height:auto; display:block;
@@ -152,6 +168,7 @@
       <span id="liveDot"></span>
       <span id="liveLabel">CoreVue — idle</span>
     </div>
+    <div id="steps"></div>
     <div id="liveBody">
       <div id="liveIdle">
         This shows the <b>automation's own browser session</b>, streamed live while a

@@ -77,6 +77,17 @@ function pushFrame(frame: string): void {
   }
 }
 
+/** Step progress for the live pane. Same one-slot rule as frames: current, not history. */
+function pushStep(e: Record<string, unknown>): void {
+  for (const w of watchers) {
+    try {
+      w.write(`event: step\ndata: ${JSON.stringify(e)}\n\n`);
+    } catch {
+      watchers.delete(w);
+    }
+  }
+}
+
 function announceRun(run: typeof liveRun): void {
   liveRun = run;
   for (const w of watchers) {
@@ -322,6 +333,7 @@ app.post('/api/sessions/:id/messages', async (req, res) => {
       interventionsDir: INTERVENTIONS_DIR,
       escalationTimeoutMs: 600_000,
       onFrame: pushFrame,
+      onStep: pushStep,
     });
 
     announceRun({ runId: 'starting', capabilityId: route.artifact.capability.id });
