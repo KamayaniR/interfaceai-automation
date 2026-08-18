@@ -128,6 +128,25 @@
             "then": "business-outcome",
             "outcomeCode": "MEMBER_NOT_FOUND"
           }
+        },
+        {
+          "when": {
+            "id": "app-error",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "HTTP 500 — Internal Server Error"
+              },
+              {
+                "kind": "text-present",
+                "text": "SqlSessionException"
+              }
+            ]
+          },
+          "then": {
+            "then": "escalate",
+            "reason": "the application returned a server error (HTTP 500). This is the app being broken right now, not the app answering the question — so it needs a person to decide whether to retry, wait, or raise it with the vendor, rather than an automated retry loop against an unhealthy system."
+          }
         }
       ]
     },
@@ -506,6 +525,6 @@
     "runId": "7d2842e6",
     "discoveredAt": "2026-08-17T04:45:52.786Z",
     "transcriptDigest": "432597895a80d351",
-    "contentHash": "sha256:f8233b9d96132d72c3fb467e44306ac5"
+    "contentHash": "sha256:fbda9fd6b4ed82b85985d4282beba434"
   }
 }

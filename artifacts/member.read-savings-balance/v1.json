@@ -527,6 +527,25 @@
               }
             ]
           }
+        },
+        {
+          "when": {
+            "id": "app-error",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "HTTP 500 — Internal Server Error"
+              },
+              {
+                "kind": "text-present",
+                "text": "SqlSessionException"
+              }
+            ]
+          },
+          "then": {
+            "then": "escalate",
+            "reason": "the application returned a server error (HTTP 500). This is the app being broken right now, not the app answering the question — so it needs a person to decide whether to retry, wait, or raise it with the vendor, rather than an automated retry loop against an unhealthy system."
+          }
         }
       ]
     },
@@ -576,6 +595,6 @@
     "runId": "fixture-0001",
     "discoveredAt": "2026-08-13T00:00:00.000Z",
     "transcriptDigest": "0000000000000000",
-    "contentHash": "sha256:47e6500e15b6310f6769932c7b2ada03"
+    "contentHash": "sha256:eccc787c1a1b93966fc13b07b5e25de9"
   }
 }

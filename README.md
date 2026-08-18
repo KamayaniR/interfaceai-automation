@@ -105,6 +105,12 @@ npm run replay -- --capability member.read-savings-balance --input memberId=1004
 
 npm run replay -- --capability member.read-savings-balance --input memberId=abc
 #   failure / contract_violation, before the browser is even launched
+
+npm run replay -- --capability member.read-savings-balance --input memberId=100442 --fault apperror
+#   the app itself is broken (HTTP 500) -> escalates to a human on the live session;
+#   unattended it ends as failure / escalation_timeout — a DIFFERENT class from a
+#   business outcome, because "the app is down" and "there is no such member" need
+#   different responses
 ```
 
 Faults: `notfound` `validation` `permdenied` `timeout` `dialog` `slow`.

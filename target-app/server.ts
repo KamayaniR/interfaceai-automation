@@ -59,6 +59,16 @@ const stickyFaults = new Map<string, string>();
  * re-authentication recovery impossible by construction, so it would test nothing.
  */
 let sessionExpiryBudget = 0;
+/**
+ * How many times the app will 500 before healing. One, so a single bounded retry rides
+ * it out — the transient case, which is what a 500 usually is. Armed at sign-on, like
+ * the expiry budget, so the recovery is reachable on demand rather than by luck.
+ *
+ * `apperror-hard` arms a budget larger than any artifact's `maxAttempts`, which is how
+ * the OTHER half of the taxonomy — an app that stays broken, i.e. `recovery_exhausted`
+ * — is reproducible too. Same condition, opposite disposition, decided by evidence.
+ */
+let appErrorBudget = 0;
 /** Once it has fired, it never re-arms — otherwise the recovery's own re-login would
  *  re-trigger it and the retry could never converge. Resets on server restart. */
 let sessionExpiryFired = false;
@@ -67,7 +77,9 @@ let sessionExpiryFired = false;
 // Fault injection
 // ---------------------------------------------------------------------------
 
-type Fault = 'notfound' | 'validation' | 'permdenied' | 'timeout' | 'dialog' | 'slow' | '';
+type Fault =
+  | 'notfound' | 'validation' | 'permdenied' | 'timeout' | 'dialog' | 'slow'
+  | 'apperror' | 'apperror-hard' | '';
 
 function faultFor(req: Request): Fault {
   const q = String(req.query._fault ?? '');
@@ -206,6 +218,8 @@ app.post('/login', (req, res) => {
   // Arm a single expiry on the first sign-on only. The recovery re-signs-on, and by
   // then the budget is spent, so the retry can actually succeed.
   if (f === 'timeout' && !sessionExpiryFired) sessionExpiryBudget = 1;
+  if (f === 'apperror') appErrorBudget = 1;
+  if (f === 'apperror-hard') appErrorBudget = 99;
   res.setHeader('Set-Cookie', `cvsid=${sid}; Path=/`);
   res.redirect(carry(req, '/search'));
 });
@@ -247,6 +261,23 @@ app.get('/member', async (req, res) => {
 
   // Transient slowness. Bounded recovery (wait/retry) should ride this out.
   if (fault === 'slow') await new Promise((r) => setTimeout(r, 6000));
+
+  // The app itself falling over: a 500 with a stack-trace page, the way a real legacy
+  // system fails. Distinct from every condition above, because those are the app WORKING
+  // and telling you something. This one is the app broken right now, so the correct
+  // response is bounded retry — and, unlike the others, the same request may well
+  // succeed a moment later. `appErrorBudget` makes that true, so recovery is possible
+  // by construction rather than only in theory.
+  if ((fault === 'apperror' || fault === 'apperror-hard') && appErrorBudget > 0) {
+    appErrorBudget -= 1;
+    return res.status(500).type('html').send(chrome('Server Error', `
+<div class="err">HTTP 500 — Internal Server Error<br><br>
+CoreVue.Data.SqlSessionException: connection reset by peer<br>
+&nbsp;&nbsp;at CoreVue.Member.DetailController.Load(String memberNo)<br>
+&nbsp;&nbsp;at CoreVue.Web.Dispatcher.Invoke(HttpContext ctx)<br><br>
+Reference: ERR-7731-A. If this persists, contact the CoreVue administrator.</div>
+`));
+  }
 
   // Field-level validation error — a business condition, not a crash.
   if (fault === 'validation' || (raw && !/^\d{6}$/.test(raw))) {

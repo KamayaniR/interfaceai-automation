@@ -1,0 +1,20 @@
+STATUS   failure
+CLASS    escalation_timeout
+STEP     s06
+MESSAGE  escalation ee8eb23e was not answered within 4000ms
+EXPECTED an operator to take control and resume
+OBSERVED no response
+
+HUMAN    1 intervention(s):
+         · s06: operator unknown, 0 action(s) recorded, 4013ms
+
+TRACE    6 step(s), 5977ms
+         ok        s01  Open the CoreVue back-office entry point
+         ok        s02  Enter the operator ID into the sign-on form
+         ok        s03  Enter the operator password into the sign-on form
+         ok        s04  Submit the sign-on form
+         ok        s05  Type the member number into the lookup field
+         ok        s06  Submit the member lookup  [condition: app-error]
+
+EVIDENCE runs/replay-0bf48e9d/run.jsonl
+────────────────────────────────────────────────────────────────
