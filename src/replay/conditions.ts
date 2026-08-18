@@ -52,6 +52,18 @@ async function targetExists(surface: WebSurface, target: TargetRef): Promise<boo
  * the state we want may be one navigation away. The timeout comes from the artifact,
  * per checkpoint, so a screen known to be slow can declare that.
  */
+/**
+ * Substring test, optionally case-insensitive.
+ *
+ * An empty needle is always "contained", which is deliberate: it is what makes an
+ * assertion built from an OPTIONAL input inert when the caller omits it, without the
+ * artifact needing a second conditional shape to express "only check this if supplied".
+ */
+function contains(haystack: string, needle: string, ignoreCase = false): boolean {
+  if (!needle) return true;
+  return ignoreCase ? haystack.toLowerCase().includes(needle.toLowerCase()) : haystack.includes(needle);
+}
+
 export async function verifyCheckpoint(surface: WebSurface, cp: Checkpoint): Promise<CheckOutcome> {
   const deadline = Date.now() + cp.timeoutMs;
   let observed = '(nothing observed)';
@@ -62,13 +74,15 @@ export async function verifyCheckpoint(surface: WebSurface, cp: Checkpoint): Pro
     switch (cp.kind) {
       case 'text-present': {
         const text = frameText(obs.text, cp.framePath);
-        if (text.includes(cp.text)) return { passed: true, expected: cp.description, observed: `found "${cp.text}"` };
+        if (contains(text, cp.text, cp.ignoreCase))
+          return { passed: true, expected: cp.description, observed: `found "${cp.text}"` };
         observed = `page text did not contain "${cp.text}"`;
         break;
       }
       case 'text-absent': {
         const text = frameText(obs.text, cp.framePath);
-        if (!text.includes(cp.text)) return { passed: true, expected: cp.description, observed: `"${cp.text}" absent` };
+        if (!contains(text, cp.text, cp.ignoreCase))
+          return { passed: true, expected: cp.description, observed: `"${cp.text}" absent` };
         observed = `page text still contained "${cp.text}"`;
         break;
       }
@@ -106,7 +120,15 @@ export async function detectCondition(surface: WebSurface, matcher: ConditionMat
   const allText = obs.text.map((t) => t.content).join('\n');
 
   for (const clause of matcher.anyOf) {
-    if (clause.kind === 'text-present' && allText.includes(clause.text)) return true;
+    if (clause.kind === 'text-present' && contains(allText, clause.text, clause.ignoreCase)) return true;
+    if (clause.kind === 'text-absent') {
+      // Scoped to the clause's frame: an unscoped check would see the nav chrome and
+      // could call a name "present" because it appears somewhere unrelated.
+      const scoped = frameText(obs.text, clause.framePath);
+      // An empty needle means the caller supplied nothing, so there is nothing to
+      // assert — never fire, rather than firing on every run.
+      if (clause.text && !contains(scoped, clause.text, clause.ignoreCase)) return true;
+    }
     if (clause.kind === 'url-matches' && new RegExp(clause.pattern).test(obs.url)) return true;
     if (clause.kind === 'element-present' && (await targetExists(surface, clause.target))) return true;
   }

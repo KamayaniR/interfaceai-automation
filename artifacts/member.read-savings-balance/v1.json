@@ -21,12 +21,39 @@
       "required": true,
       "pattern": "^\\d{6}$",
       "sensitivity": "pii"
+    },
+    "expectedName": {
+      "type": "string",
+      "description": "Optional. Part of the member's name as the caller knows it, e.g. \"Rosa\". When supplied, the capability asserts the record on screen belongs to that person before reading anything off it, and returns MEMBER_NAME_MISMATCH if it does not. Omit it to skip the check.",
+      "required": false,
+      "sensitivity": "pii"
+    },
+    "operatorId": {
+      "type": "string",
+      "description": "Operator ID for the CoreVue sign-on. Supplied by the runtime environment, never by the caller.",
+      "required": true,
+      "sensitivity": "secret",
+      "source": "runtime",
+      "env": "COREVUE_OPERATOR_ID"
+    },
+    "operatorPassword": {
+      "type": "string",
+      "description": "Password for the CoreVue operator sign-on. Supplied by the runtime environment, never by the caller.",
+      "required": true,
+      "sensitivity": "secret",
+      "source": "runtime",
+      "env": "COREVUE_OPERATOR_PASSWORD"
     }
   },
   "outputs": {
     "savingsBalance": {
       "type": "money",
       "description": "Current balance of the S1 savings share account, without the currency symbol.",
+      "sensitivity": "pii"
+    },
+    "memberName": {
+      "type": "string",
+      "description": "Name on the member record that was actually read, as displayed by CoreVue.",
       "sensitivity": "pii"
     }
   },
@@ -45,6 +72,10 @@
       "code": "ACCESS_DENIED",
       "description": "The operator's role is not authorised to view this member record.",
       "terminal": true
+    },
+    {
+      "code": "MEMBER_NAME_MISMATCH",
+      "description": "The member number resolved to a different person than the caller named. Reading this record would be acting on the wrong account, so the run stops without returning a balance."
     }
   ],
   "preconditions": [],
@@ -73,7 +104,7 @@
       "intent": "Enter the operator ID into the sign-on form",
       "action": {
         "kind": "type",
-        "value": "svc_automation",
+        "value": "{{operatorId}}",
         "clearFirst": true
       },
       "target": {
@@ -116,7 +147,7 @@
       "intent": "Enter the operator password into the sign-on form",
       "action": {
         "kind": "type",
-        "value": "not-a-real-password",
+        "value": "{{operatorPassword}}",
         "clearFirst": true
       },
       "target": {
@@ -302,6 +333,26 @@
       "onCondition": [
         {
           "when": {
+            "id": "member-name-mismatch",
+            "anyOf": [
+              {
+                "kind": "text-absent",
+                "text": "{{expectedName}}",
+                "framePath": [
+                  "content"
+                ],
+                "ignoreCase": true
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NAME_MISMATCH",
+            "message": "The record on screen is not the person the caller named. Stopping before reading anything off the wrong account."
+          }
+        },
+        {
+          "when": {
             "id": "member-not-found",
             "anyOf": [
               {
@@ -364,7 +415,7 @@
                 "intent": "Re-enter the operator ID after the session expired",
                 "action": {
                   "kind": "type",
-                  "value": "svc_automation",
+                  "value": "{{operatorId}}",
                   "clearFirst": true
                 },
                 "target": {
@@ -394,7 +445,7 @@
                 "intent": "Re-enter the operator password after the session expired",
                 "action": {
                   "kind": "type",
-                  "value": "not-a-real-password",
+                  "value": "{{operatorPassword}}",
                   "clearFirst": true
                 },
                 "target": {
@@ -527,8 +578,57 @@
               }
             ]
           }
+        },
+        {
+          "when": {
+            "id": "app-error",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "HTTP 500 — Internal Server Error"
+              },
+              {
+                "kind": "text-present",
+                "text": "SqlSessionException"
+              }
+            ]
+          },
+          "then": {
+            "then": "escalate",
+            "reason": "the application returned a server error (HTTP 500). This is the app being broken right now, not the app answering the question — so it needs a person to decide whether to retry, wait, or raise it with the vendor, rather than an automated retry loop against an unhealthy system."
+          }
         }
       ]
+    },
+    {
+      "id": "s06b",
+      "intent": "Read the name on the member record that was actually opened",
+      "action": {
+        "kind": "extract",
+        "outputName": "memberName",
+        "from": "text"
+      },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "label-proximity",
+            "labelText": "Name",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "anchor-relative",
+            "anchorText": "Name",
+            "role": "text",
+            "offset": 0
+          }
+        ]
+      },
+      "risk": "safe",
+      "onCondition": []
     },
     {
       "id": "s07",
@@ -576,6 +676,6 @@
     "runId": "fixture-0001",
     "discoveredAt": "2026-08-13T00:00:00.000Z",
     "transcriptDigest": "0000000000000000",
-    "contentHash": "sha256:47e6500e15b6310f6769932c7b2ada03"
+    "contentHash": "sha256:8e4b5f9b07460f2d7e3ff0ef7f56bb17"
   }
 }

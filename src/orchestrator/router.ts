@@ -65,6 +65,11 @@ Decide one of three things:
 - "clarify" — a capability matches but a required argument is missing or ambiguous. Ask for exactly what you need. NEVER invent an account number, member number or amount.
 - "discover" — nothing available does this. Recording a new capability requires a slow, expensive LLM run against the live application, so only choose this when you are confident nothing fits.
 
+Earlier turns may be shown to you. Use them ONLY to resolve what the current goal is
+referring to — a bare "100442" following your own question about a member number is that
+answer. Never carry a value forward into an unrelated request: an account number
+mentioned earlier is not an answer to a different question later.
+
 Report "confidence" honestly as 0..1. Under-confidence is cheap; over-confidence acts on the wrong member's account. When a capability is a near-miss rather than a match, say so in "reason" — it may be a variant of the same underlying flow for a different institution.
 
 Respond with ONLY a JSON object, no prose:
@@ -89,14 +94,47 @@ function renderCatalogue(defs: CapabilityToolDef[]): string {
     .join('\n\n');
 }
 
+/**
+ * A short window of prior turns, so a reply can resolve against the question that
+ * prompted it. Asking "which member number?" is useless if the answer arrives with no
+ * memory of the question.
+ */
+export interface PriorTurn {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/**
+ * How much conversation the router may see.
+ *
+ * Deliberately short. A long window is not more helpful — it is more dangerous: a member
+ * number mentioned three topics ago becomes a plausible answer to an unrelated question,
+ * which is precisely the "acted on the wrong account" failure the clarify path exists to
+ * prevent. Six turns covers a question and its answer with room to spare.
+ */
+export const CONTEXT_TURNS = 6;
+
 /** The only part that needs a model. */
-export async function proposeRoute(goal: string, defs: CapabilityToolDef[]): Promise<ProposedRoute> {
+export async function proposeRoute(
+  goal: string,
+  defs: CapabilityToolDef[],
+  history: PriorTurn[] = [],
+): Promise<ProposedRoute> {
   const client = new Anthropic();
+
+  const recent = history.slice(-CONTEXT_TURNS);
+  const messages: Anthropic.MessageParam[] = [
+    { role: 'user', content: `AVAILABLE CAPABILITIES:\n\n${renderCatalogue(defs)}` },
+    { role: 'assistant', content: 'Understood. Give me a goal and I will route it.' },
+    ...recent.map((t) => ({ role: t.role, content: t.content })),
+    { role: 'user', content: `GOAL: ${goal}` },
+  ];
+
   const response = await client.messages.create({
     model: ROUTER_MODEL,
     max_tokens: 2000,
     system: SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: `AVAILABLE CAPABILITIES:\n\n${renderCatalogue(defs)}\n\nGOAL: ${goal}` }],
+    messages,
   });
 
   const text = response.content.find((b) => b.type === 'text');
@@ -172,6 +210,27 @@ export function applyGuardrails(proposed: ProposedRoute, catalog: Catalog, goal:
   // failure into a question the user can answer.
   const inputs = proposed.inputs ?? {};
   for (const [name, spec] of Object.entries(artifact.inputs)) {
+    // A caller-supplied secret is refused outright. Asking a person for a password
+    // through a chat window backed by an LLM puts it in conversation history and in a
+    // model's context, and no amount of downstream redaction takes it back out.
+    if (spec.sensitivity === 'secret' && spec.source !== 'runtime') {
+      return {
+        action: 'refuse',
+        reason:
+          `capability "${artifact.capability.id}" declares "${name}" as a caller-supplied secret. ` +
+          `Credentials must be supplied by the runtime (source: "runtime"), never requested from ` +
+          `a caller through an agent. Re-record or amend the artifact.`,
+      };
+    }
+
+    // Supplied by the environment, not by whoever is asking. If a model invented a
+    // value for one anyway, drop it rather than forward it: the engine will overwrite it
+    // from env, and echoing a guessed credential back through the logs helps nobody.
+    if (spec.source === 'runtime') {
+      delete inputs[name];
+      continue;
+    }
+
     const value = inputs[name];
     if (value === undefined) {
       if (!spec.required) continue;

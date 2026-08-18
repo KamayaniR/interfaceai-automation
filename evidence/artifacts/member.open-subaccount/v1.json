@@ -29,6 +29,22 @@
       "pattern": "^S[23]$",
       "sensitivity": "public",
       "example": "S2"
+    },
+    "operatorId": {
+      "type": "string",
+      "description": "Operator ID for the CoreVue sign-on. Supplied by the runtime environment, never by the caller.",
+      "required": true,
+      "sensitivity": "secret",
+      "source": "runtime",
+      "env": "COREVUE_OPERATOR_ID"
+    },
+    "operatorPassword": {
+      "type": "string",
+      "description": "Password for the CoreVue operator sign-on. Supplied by the runtime environment, never by the caller.",
+      "required": true,
+      "sensitivity": "secret",
+      "source": "runtime",
+      "env": "COREVUE_OPERATOR_PASSWORD"
     }
   },
   "outputs": {
@@ -76,7 +92,7 @@
       "intent": "Enter the operator ID into the sign-on form",
       "action": {
         "kind": "type",
-        "value": "svc_automation",
+        "value": "{{operatorId}}",
         "clearFirst": true
       },
       "target": {
@@ -119,7 +135,7 @@
       "intent": "Enter the operator password into the sign-on form",
       "action": {
         "kind": "type",
-        "value": "not-a-real-password",
+        "value": "{{operatorPassword}}",
         "clearFirst": true
       },
       "target": {
@@ -352,7 +368,7 @@
                 "intent": "Re-enter the operator ID after the session expired",
                 "action": {
                   "kind": "type",
-                  "value": "svc_automation",
+                  "value": "{{operatorId}}",
                   "clearFirst": true
                 },
                 "target": {
@@ -382,7 +398,7 @@
                 "intent": "Re-enter the operator password after the session expired",
                 "action": {
                   "kind": "type",
-                  "value": "not-a-real-password",
+                  "value": "{{operatorPassword}}",
                   "clearFirst": true
                 },
                 "target": {
@@ -515,6 +531,25 @@
               }
             ]
           }
+        },
+        {
+          "when": {
+            "id": "app-error",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "HTTP 500 — Internal Server Error"
+              },
+              {
+                "kind": "text-present",
+                "text": "SqlSessionException"
+              }
+            ]
+          },
+          "then": {
+            "then": "escalate",
+            "reason": "the application returned a server error (HTTP 500). This is the app being broken right now, not the app answering the question — so it needs a person to decide whether to retry, wait, or raise it with the vendor, rather than an automated retry loop against an unhealthy system."
+          }
         }
       ]
     },
@@ -601,7 +636,7 @@
     },
     {
       "id": "s09",
-      "intent": "Create the sub-account \u2014 IRREVERSIBLE: this opens a real account on the member's record",
+      "intent": "Create the sub-account — IRREVERSIBLE: this opens a real account on the member's record",
       "action": {
         "kind": "click"
       },
@@ -687,6 +722,7 @@
     "model": "hand-authored-fixture",
     "runId": "fixture-0002",
     "discoveredAt": "2026-08-13T00:00:00.000Z",
-    "transcriptDigest": "0000000000000000"
+    "transcriptDigest": "0000000000000000",
+    "contentHash": "sha256:91d2bc29e11979f0dfe739c174d343ed"
   }
 }

@@ -1,11 +1,11 @@
 {
   "schemaVersion": "1.0",
   "capability": {
-    "id": "member.read-savings-balance",
-    "version": 2,
-    "name": "Read member savings balance",
-    "description": "Signs on to the CoreVue 7.2 back-office console, looks up a member by member number via Member Lookup, and returns the current balance of their Savings (S1) share account along with the member name shown on the Member Detail screen. Read-only: no records are modified. Note: the behaviour for a non-existent member number was deliberately not exercised during recording (probing it would have polluted the replayable flow), so no MEMBER_NOT_FOUND outcome text is declared yet.",
-    "status": "draft"
+    "id": "member.read-checking-balance",
+    "version": 1,
+    "name": "Read member checking (D1) balance",
+    "description": "Signs on to the CoreVue back-office console, looks up a member by member number, and reads the Checking (D1) current balance (plus the member name) from the Member Detail screen. Read-only: no records are modified.",
+    "status": "approved"
   },
   "app": {
     "appId": "corevue",
@@ -17,37 +17,57 @@
   "inputs": {
     "operatorId": {
       "type": "string",
-      "description": "Operator ID used to sign on to the CoreVue console.",
+      "description": "Operator ID used to sign on to the CoreVue console. Supplied by the runtime environment, never by the caller.",
       "required": true,
-      "sensitivity": "secret"
+      "sensitivity": "secret",
+      "source": "runtime",
+      "env": "COREVUE_OPERATOR_ID"
     },
     "operatorPassword": {
       "type": "string",
-      "description": "Password for the operator sign-on.",
+      "description": "Password for the operator sign-on. Supplied by the runtime environment, never by the caller.",
       "required": true,
-      "sensitivity": "secret"
+      "sensitivity": "secret",
+      "source": "runtime",
+      "env": "COREVUE_OPERATOR_PASSWORD"
     },
     "memberNumber": {
       "type": "string",
-      "description": "The credit union member number to look up.",
+      "description": "The member number to look up.",
       "required": true,
       "pattern": "^\\d{6}$",
+      "sensitivity": "pii"
+    },
+    "expectedName": {
+      "type": "string",
+      "description": "Optional. Part of the member's name as the caller knows it, e.g. \"Rosa\". When supplied, the capability asserts the record on screen belongs to that person before reading anything off it, and returns MEMBER_NAME_MISMATCH if it does not. Omit it to skip the check.",
+      "required": false,
       "sensitivity": "pii"
     }
   },
   "outputs": {
-    "savingsBalance": {
+    "checkingBalance": {
       "type": "money",
-      "description": "Current balance of the member's Savings (S1) share account, without currency symbol (e.g. 4,182.55).",
+      "description": "Current balance of the member's Checking (D1) share account, without currency symbol.",
       "sensitivity": "pii"
     },
     "memberName": {
       "type": "string",
-      "description": "Member name as shown on the Member Detail screen, in LAST, FIRST M format.",
+      "description": "Name on the member record that was actually read, as displayed by CoreVue.",
       "sensitivity": "pii"
     }
   },
-  "outcomes": [],
+  "outcomes": [
+    {
+      "code": "MEMBER_NOT_FOUND",
+      "description": "No member record exists for the supplied member number, so no balances can be returned.",
+      "terminal": true
+    },
+    {
+      "code": "MEMBER_NAME_MISMATCH",
+      "description": "The member number resolved to a different person than the caller named. Reading this record would be acting on the wrong account, so the run stops without returning a balance."
+    }
+  ],
   "preconditions": [],
   "steps": [
     {
@@ -58,12 +78,6 @@
         "url": "http://localhost:3100"
       },
       "risk": "safe",
-      "waitFor": {
-        "kind": "url-matches",
-        "pattern": "/",
-        "timeoutMs": 10000,
-        "description": "the browser reaches / after \"Open the corevue entry point\""
-      },
       "onCondition": []
     },
     {
@@ -113,13 +127,62 @@
         }
       },
       "risk": "safe",
-      "waitFor": {
-        "kind": "url-matches",
-        "pattern": "/",
-        "timeoutMs": 10000,
-        "description": "the browser reaches / after \"Enter the operator ID to sign on to the console\""
-      },
-      "onCondition": []
+      "onCondition": [
+        {
+          "when": {
+            "id": "member-name-mismatch",
+            "anyOf": [
+              {
+                "kind": "text-absent",
+                "text": "{{expectedName}}",
+                "framePath": [
+                  "content"
+                ],
+                "ignoreCase": true
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NAME_MISMATCH",
+            "message": "The record on screen is not the person the caller named. Stopping before reading anything off the wrong account."
+          }
+        },
+        {
+          "when": {
+            "id": "member-not-found",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "Member not found"
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NOT_FOUND"
+          }
+        },
+        {
+          "when": {
+            "id": "app-error",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "HTTP 500 — Internal Server Error"
+              },
+              {
+                "kind": "text-present",
+                "text": "SqlSessionException"
+              }
+            ]
+          },
+          "then": {
+            "then": "escalate",
+            "reason": "the application returned a server error (HTTP 500). This is the app being broken right now, not the app answering the question — so it needs a person to decide whether to retry, wait, or raise it with the vendor, rather than an automated retry loop against an unhealthy system."
+          }
+        }
+      ]
     },
     {
       "id": "s03",
@@ -168,17 +231,27 @@
         }
       },
       "risk": "safe",
-      "waitFor": {
-        "kind": "url-matches",
-        "pattern": "/",
-        "timeoutMs": 10000,
-        "description": "the browser reaches / after \"Enter the operator password to sign on\""
-      },
-      "onCondition": []
+      "onCondition": [
+        {
+          "when": {
+            "id": "member-not-found",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "Member not found"
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NOT_FOUND"
+          }
+        }
+      ]
     },
     {
       "id": "s04",
-      "intent": "Submit the sign-on form to reach the console",
+      "intent": "Submit the sign-on form",
       "action": {
         "kind": "click"
       },
@@ -221,12 +294,29 @@
       },
       "risk": "safe",
       "waitFor": {
-        "kind": "url-matches",
-        "pattern": "/",
+        "kind": "text-present",
+        "text": "CoreVue 7.2 — Member Lookup Member Lookup Member Number",
+        "framePath": [],
         "timeoutMs": 10000,
-        "description": "the browser reaches / after \"Submit the sign-on form to reach the console\""
+        "description": "\"CoreVue 7.2 — Member Lookup Member Lookup Member Number\" appears after \"Submit the sign-on form\""
       },
-      "onCondition": []
+      "onCondition": [
+        {
+          "when": {
+            "id": "member-not-found",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "Member not found"
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NOT_FOUND"
+          }
+        }
+      ]
     },
     {
       "id": "s05",
@@ -275,13 +365,23 @@
         }
       },
       "risk": "safe",
-      "waitFor": {
-        "kind": "url-matches",
-        "pattern": "/",
-        "timeoutMs": 10000,
-        "description": "the browser reaches / after \"Enter the member number to look up\""
-      },
-      "onCondition": []
+      "onCondition": [
+        {
+          "when": {
+            "id": "member-not-found",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "Member not found"
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NOT_FOUND"
+          }
+        }
+      ]
     },
     {
       "id": "s06",
@@ -327,20 +427,60 @@
         }
       },
       "risk": "safe",
-      "waitFor": {
-        "kind": "url-matches",
-        "pattern": "/",
-        "timeoutMs": 10000,
-        "description": "the browser reaches / after \"Search for the member record\""
+      "onCondition": [
+        {
+          "when": {
+            "id": "member-not-found",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "Member not found"
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NOT_FOUND"
+          }
+        }
+      ]
+    },
+    {
+      "id": "s06b",
+      "intent": "Read the name on the member record that was actually opened",
+      "action": {
+        "kind": "extract",
+        "outputName": "memberName",
+        "from": "text"
       },
+      "target": {
+        "framePath": [
+          "content"
+        ],
+        "candidates": [
+          {
+            "by": "label-proximity",
+            "labelText": "Name",
+            "direction": "right",
+            "index": 0
+          },
+          {
+            "by": "anchor-relative",
+            "anchorText": "Name",
+            "role": "text",
+            "offset": 0
+          }
+        ]
+      },
+      "risk": "safe",
       "onCondition": []
     },
     {
       "id": "s07",
-      "intent": "Capture the member's current savings (S1) balance, which is what was asked for",
+      "intent": "Record the checking (D1) current balance that was asked for",
       "action": {
         "kind": "extract",
-        "outputName": "savingsBalance",
+        "outputName": "checkingBalance",
         "from": "text",
         "pattern": "\\$([\\d,\\.]+)"
       },
@@ -351,13 +491,13 @@
         "candidates": [
           {
             "by": "label-proximity",
-            "labelText": "Savings (S1) Current Balance",
+            "labelText": "Checking (D1) Current Balance",
             "direction": "right",
             "index": 0
           },
           {
             "by": "anchor-relative",
-            "anchorText": "Savings (S1) Current Balance",
+            "anchorText": "Checking (D1) Current Balance",
             "role": "text",
             "offset": 0
           }
@@ -368,11 +508,27 @@
         }
       },
       "risk": "safe",
-      "onCondition": []
+      "onCondition": [
+        {
+          "when": {
+            "id": "member-not-found",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "Member not found"
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NOT_FOUND"
+          }
+        }
+      ]
     },
     {
       "id": "s08",
-      "intent": "Capture the member name so the caller can confirm the right record was read",
+      "intent": "Record the member name to confirm the right record was read",
       "action": {
         "kind": "extract",
         "outputName": "memberName",
@@ -402,21 +558,37 @@
         }
       },
       "risk": "safe",
-      "onCondition": []
+      "onCondition": [
+        {
+          "when": {
+            "id": "member-not-found",
+            "anyOf": [
+              {
+                "kind": "text-present",
+                "text": "Member not found"
+              }
+            ]
+          },
+          "then": {
+            "then": "business-outcome",
+            "outcomeCode": "MEMBER_NOT_FOUND"
+          }
+        }
+      ]
     }
   ],
   "checkpoint": {
     "kind": "text-present",
-    "text": "Savings (S1) Current Balance",
+    "text": "Checking (D1) Current Balance",
     "framePath": [],
     "timeoutMs": 15000,
-    "description": "\"Savings (S1) Current Balance\" is visible, proving the capability reached its goal"
+    "description": "\"Checking (D1) Current Balance\" is visible, proving the capability reached its goal"
   },
   "provenance": {
     "model": "claude-opus-5",
-    "runId": "fd56baf1",
-    "discoveredAt": "2026-08-13T21:29:38.262Z",
-    "transcriptDigest": "d5f9edd4079eab7c",
-    "contentHash": "sha256:fafdbc55c4b8bf6d59344d8abc6ad845"
+    "runId": "7d2842e6",
+    "discoveredAt": "2026-08-17T04:45:52.786Z",
+    "transcriptDigest": "432597895a80d351",
+    "contentHash": "sha256:527c911a9bcde88a6f363c9891a11321"
   }
 }

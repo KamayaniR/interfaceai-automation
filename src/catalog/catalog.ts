@@ -133,6 +133,9 @@ export class Catalog {
     const required: string[] = [];
 
     for (const [name, spec] of Object.entries(artifact.inputs)) {
+      // Runtime inputs are not the caller's business and must never reach a model's tool
+      // schema — an argument an agent can see is an argument it will try to fill.
+      if (spec.source === 'runtime') continue;
       properties[name] = {
         type: spec.type,
         description:

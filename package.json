@@ -17,7 +17,8 @@
     "typecheck": "tsc --noEmit",
     "verify": "bash scripts/verify.sh",
     "ask": "tsx --env-file-if-exists=.env src/cli.ts ask",
-    "stability": "tsx --env-file-if-exists=.env src/cli.ts stability"
+    "stability": "tsx --env-file-if-exists=.env src/cli.ts stability",
+    "dashboard": "tsx --env-file-if-exists=.env src/dashboard/server.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",

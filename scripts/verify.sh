@@ -96,6 +96,42 @@ else
   bad "irreversible step escalates" "escalation_timeout" "$(grep -E '^STATUS|^CLASS' <<<"$OUT" | tr '\n' ' ')"
 fi
 
+# An app that is BROKEN right now must not be reported the same way as an app that
+# ANSWERED. Both stop the run; only one of them is the system working.
+OUT=$(npx tsx --env-file-if-exists=.env src/cli.ts replay --capability member.read-savings-balance \
+        --input memberId=100442 --fault apperror --escalation-timeout 4000 2>&1)
+if grep -q "escalation_timeout" <<<"$OUT" && grep -q "app-error" <<<"$OUT"; then
+  ok "an HTTP 500 routes to a human, distinct from a business outcome"
+else
+  bad "app error escalates" "escalation_timeout via app-error" "$(grep -E '^STATUS|^CLASS' <<<"$OUT" | tr '\n' ' ')"
+fi
+
+OUT=$(npx tsx --env-file-if-exists=.env src/cli.ts replay --capability member.read-savings-balance \
+        --input memberId=999999 2>&1)
+if grep -q "MEMBER_NOT_FOUND" <<<"$OUT"; then
+  ok "...while 'no such member' stays a business outcome, not an escalation"
+else
+  bad "not-found stays a business outcome" "MEMBER_NOT_FOUND" "$(grep -E '^STATUS' <<<"$OUT")"
+fi
+
+echo
+echo "── wrong-account protection ────────────────────────────────"
+OUT=$(npx tsx --env-file-if-exists=.env src/cli.ts replay --capability member.read-savings-balance \
+        --input memberId=100443 --input expectedName=Rosa 2>&1)
+if grep -q "MEMBER_NAME_MISMATCH" <<<"$OUT" && ! grep -q "savingsBalance" <<<"$OUT"; then
+  ok "a member number that resolves to someone else stops WITHOUT returning their balance"
+else
+  bad "wrong-account check" "MEMBER_NAME_MISMATCH and no balance" "$(grep -E '^STATUS|^OUTCOME' <<<"$OUT" | tr '\n' ' ')"
+fi
+
+OUT=$(npx tsx --env-file-if-exists=.env src/cli.ts replay --capability member.read-savings-balance \
+        --input memberId=100442 --input expectedName=Rosa 2>&1)
+if grep -q '"savingsBalance"' <<<"$OUT" && grep -q "ALVAREZ, ROSA M" <<<"$OUT"; then
+  ok "...and the matching name still succeeds, returning who it read"
+else
+  bad "name match succeeds" "balance + memberName" "$(grep -E '^STATUS' <<<"$OUT")"
+fi
+
 echo
 echo "── artifact integrity ──────────────────────────────────────"
 CAPFILE=artifacts/member.read-savings-balance/v1.json

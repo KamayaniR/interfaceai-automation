@@ -40,6 +40,7 @@ import { verifyContentHash } from '../schema/hash.ts';
 import { Policy } from '../policy/policy.ts';
 import { Redactor } from '../policy/redact.ts';
 import { RunLogger } from '../obs/logger.ts';
+import { pace } from '../obs/pace.ts';
 import { SessionControl, InterventionQueue, type InterventionRequest } from '../escalation/broker.ts';
 
 export interface ReplayOptions {
@@ -53,6 +54,23 @@ export interface ReplayOptions {
   escalationTimeoutMs: number;
   /** Appended to every target-app URL, to reproduce a runtime condition on demand. */
   faultParam?: string;
+  /** Optional live-frame sink, for a viewer watching this exact session. */
+  onFrame?: (frame: string) => void;
+  /**
+   * Optional step-progress sink. Pixels alone do not explain a run: a paced replay
+   * shows a static screen, then an instant jump, which reads as "nothing, then magic".
+   * Naming the step as it starts is what makes the flow legible to someone watching.
+   * Presentation only — nothing in the engine branches on it.
+   */
+  onStep?: (e: {
+    phase: 'start' | 'end';
+    index: number;
+    total: number;
+    id: string;
+    intent: string;
+    risk: string;
+    status?: string;
+  }) => void;
 }
 
 /** Thrown internally to unwind to the top-level result builder. */
@@ -106,6 +124,7 @@ export class ReplayEngine {
         policy,
         control: this.control,
         onEvent: (e) => this.logger.log(e.type, e.detail),
+        onFrame: this.opts.onFrame,
       });
 
       await this.checkPreconditions();
@@ -176,6 +195,26 @@ export class ReplayEngine {
 
   private validateInputs(): void {
     const specs = this.opts.artifact.inputs;
+
+    // Resolve runtime-supplied inputs from the environment first, so they are validated
+    // on exactly the same path as everything else. A credential that never reaches the
+    // caller still has to be present and well-formed, and a missing one must fail here
+    // — before a browser is launched — rather than as a mystery sign-on failure later.
+    for (const [name, spec] of Object.entries(specs)) {
+      if (spec.source !== 'runtime') continue;
+      const fromEnv = spec.env ? process.env[spec.env] : undefined;
+      if (fromEnv === undefined) {
+        throw new Terminate('failure', {
+          class: 'contract_violation',
+          stepId: null,
+          message: `runtime input "${name}" is not set in the environment`,
+          expected: `environment variable ${spec.env ?? '(none declared)'} to be set`,
+          observed: 'unset',
+        });
+      }
+      this.opts.inputs[name] = fromEnv;
+    }
+
     for (const [name, spec] of Object.entries(specs)) {
       const value = this.opts.inputs[name];
       if (value === undefined) {
@@ -253,6 +292,16 @@ export class ReplayEngine {
     };
 
     this.logger.log('step.start', { stepId: step.id, intent: step.intent, risk: step.risk });
+    this.opts.onStep?.({
+      phase: 'start',
+      index: index + 1,
+      total,
+      id: step.id,
+      intent: step.intent,
+      risk: step.risk,
+    });
+    // Idle time only, so the previous step's result stays on screen long enough to read.
+    await pace();
 
     try {
       await this.act(step, entry, index, total);
@@ -267,14 +316,14 @@ export class ReplayEngine {
       }
 
       if (step.waitFor) {
-        const outcome = await verifyCheckpoint(this.surface, step.waitFor);
+        const outcome = await verifyCheckpoint(this.surface, this.interpolateCheckpoint(step.waitFor));
         if (!outcome.passed) {
           // One last condition sweep: a slow app may only have rendered its error
           // banner while the checkpoint was polling.
           const late = await this.dispatchConditions(step, entry, index, total);
           if (late === 'recovered') {
             await this.act(step, entry, index, total);
-            const retry = await verifyCheckpoint(this.surface, step.waitFor);
+            const retry = await verifyCheckpoint(this.surface, this.interpolateCheckpoint(step.waitFor));
             if (retry.passed) return;
           }
           await this.captureFailureEvidence(`step-${step.id}`);
@@ -292,6 +341,15 @@ export class ReplayEngine {
       entry.durationMs = Date.now() - started;
       this.trace.push(entry);
       this.logger.log('step.end', { stepId: step.id, status: entry.status, durationMs: entry.durationMs });
+      this.opts.onStep?.({
+        phase: 'end',
+        index: index + 1,
+        total,
+        id: step.id,
+        intent: step.intent,
+        risk: step.risk,
+        status: entry.status,
+      });
     }
   }
 
@@ -388,7 +446,7 @@ export class ReplayEngine {
     total: number,
   ): Promise<'none' | 'recovered'> {
     for (const rule of step.onCondition) {
-      if (!(await detectCondition(this.surface, rule.when))) continue;
+      if (!(await detectCondition(this.surface, this.interpolateMatcher(rule.when)))) continue;
 
       entry.conditionFired = rule.when.id;
       // Bind to a local so TypeScript narrows the discriminated union across the switch.
@@ -438,7 +496,7 @@ export class ReplayEngine {
               if (sub.waitFor) await verifyCheckpoint(this.surface, sub.waitFor);
             }
 
-            if (!(await detectCondition(this.surface, rule.when))) {
+            if (!(await detectCondition(this.surface, this.interpolateMatcher(rule.when)))) {
               this.logger.log('recovery.succeeded', { stepId: step.id, condition: rule.when.id, attempt });
               return 'recovered';
             }
@@ -567,22 +625,48 @@ export class ReplayEngine {
   // Helpers
   // -------------------------------------------------------------------------
 
-  /** Resolve `{{param}}` placeholders against validated inputs. */
+  /**
+   * Resolve `{{param}}` placeholders against validated inputs.
+   *
+   * `optional` is used for checkpoints. An assertion built from an input the caller did
+   * not supply must go quiet, not blow up: `text-absent "{{expectedName}}"` with no
+   * expectedName resolves to an empty needle, which `contains()` treats as always found,
+   * so the assertion is inert. Actions keep the strict behaviour — a step that types an
+   * undeclared parameter is a contract violation, not a no-op.
+   */
+  private sub(text: string, optional = false): string {
+    return text.replace(/\{\{(\w+)\}\}/g, (_m, key: string) => {
+      const value = this.opts.inputs[key];
+      if (value === undefined) {
+        if (optional) return '';
+        throw new Terminate('failure', {
+          class: 'contract_violation',
+          stepId: null,
+          message: `step references undeclared parameter "{{${key}}}"`,
+          expected: `a declared input`,
+          observed: key,
+        });
+      }
+      return value;
+    });
+  }
+
+  /** Same, for every clause of a condition matcher. */
+  private interpolateMatcher<T extends { anyOf: unknown[] }>(m: T): T {
+    return { ...m, anyOf: m.anyOf.map((c) => this.interpolateCheckpoint(c)) };
+  }
+
+  /** Resolve placeholders inside a checkpoint's text, so it can assert on caller intent. */
+  private interpolateCheckpoint<T>(cp: T): T {
+    const c = cp as unknown as { kind?: string; text?: string };
+    if (c && (c.kind === 'text-present' || c.kind === 'text-absent') && typeof c.text === 'string') {
+      return { ...(cp as object), text: this.sub(c.text, true) } as T;
+    }
+    return cp;
+  }
+
   private interpolate(action: Action): Action {
-    const sub = (s: string): string =>
-      s.replace(/\{\{(\w+)\}\}/g, (_m, key: string) => {
-        const value = this.opts.inputs[key];
-        if (value === undefined) {
-          throw new Terminate('failure', {
-            class: 'contract_violation',
-            stepId: null,
-            message: `step references undeclared parameter "{{${key}}}"`,
-            expected: `a declared input`,
-            observed: key,
-          });
-        }
-        return value;
-      });
+    const sub = (s: string): string => this.sub(s);
 
     if (action.kind === 'type') return { ...action, value: sub(action.value) };
     if (action.kind === 'select') return { ...action, value: sub(action.value) };

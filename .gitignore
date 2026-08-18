@@ -6,6 +6,8 @@ runs/
 
 # work-in-progress, not part of the submission
 portions/
-
-# chat sessions (dashboard branch); never commit conversation history
+# chat sessions — never commit conversation history
 sessions/
+
+# route memoisation — a local cache, rebuilt on demand
+routes/

@@ -140,6 +140,7 @@ function checkpointFor(
   if (isLast) {
     return {
       kind: 'text-present',
+      ignoreCase: false,
       text: successText,
       framePath: [],
       timeoutMs: 10_000,
@@ -180,6 +181,7 @@ function checkpointFor(
 
   return {
     kind: 'text-present',
+    ignoreCase: false,
     text: assertion,
     framePath: [],
     timeoutMs: 10_000,
@@ -189,17 +191,31 @@ function checkpointFor(
   };
 }
 
+/** `corevue` + `operatorPassword` -> `COREVUE_OPERATOR_PASSWORD`. */
+function envVarFor(appId: string, name: string): string {
+  const snake = name.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toUpperCase();
+  return `${appId.replace(/[^a-zA-Z0-9]/g, '_').toUpperCase()}_${snake}`;
+}
+
 export function recordArtifact(opts: RecordOptions): CapabilityArtifact {
   const { contract, actions } = opts;
 
   const inputs: Record<string, ParamSpec> = {};
   for (const i of contract.inputs) {
+    // A secret is never a caller argument. The model is right to notice that sign-on is
+    // parameterised, and wrong about who supplies it: leaving it caller-supplied makes an
+    // agent ask a human for a service password in a chat window, which puts it in
+    // conversation history and in a model's context. Reclassify at record time, so no
+    // discovered artifact can ship that shape.
+    const isSecret = i.sensitivity === 'secret';
     inputs[i.name] = {
       type: i.type,
       description: i.description,
       required: true,
       pattern: i.pattern,
       sensitivity: i.sensitivity,
+      source: isSecret ? 'runtime' : 'caller',
+      env: isSecret ? envVarFor(opts.appId, i.name) : undefined,
       // The example is the value the model typed during discovery. It is recorded only
       // when the parameter is public — an example of a pii field would defeat the point
       // of classifying it.
@@ -247,7 +263,7 @@ export function recordArtifact(opts: RecordOptions): CapabilityArtifact {
     .map((o) => ({
       when: {
         id: o.code.toLowerCase().replace(/_/g, '-'),
-        anyOf: [{ kind: 'text-present' as const, text: o.detect_text }],
+        anyOf: [{ kind: 'text-present' as const, text: o.detect_text, ignoreCase: false }],
       },
       then: { then: 'business-outcome' as const, outcomeCode: o.code },
     }));
@@ -320,6 +336,7 @@ export function recordArtifact(opts: RecordOptions): CapabilityArtifact {
     steps,
     checkpoint: {
       kind: 'text-present',
+      ignoreCase: false,
       text: contract.success_text,
       framePath: [],
       timeoutMs: 15_000,

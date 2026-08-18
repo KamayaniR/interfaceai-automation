@@ -105,6 +105,12 @@ npm run replay -- --capability member.read-savings-balance --input memberId=1004
 
 npm run replay -- --capability member.read-savings-balance --input memberId=abc
 #   failure / contract_violation, before the browser is even launched
+
+npm run replay -- --capability member.read-savings-balance --input memberId=100442 --fault apperror
+#   the app itself is broken (HTTP 500) -> escalates to a human on the live session;
+#   unattended it ends as failure / escalation_timeout — a DIFFERENT class from a
+#   business outcome, because "the app is down" and "there is no such member" need
+#   different responses
 ```
 
 Faults: `notfound` `validation` `permdenied` `timeout` `dialog` `slow`.
@@ -241,6 +247,13 @@ itself and needs no API key. 14 checks, ~40s.
 npm test          # 54 unit tests
 npm run typecheck
 ```
+
+## Dashboard (branch only)
+
+A catalog browser, chat with history, and live intervention alerts live on
+`feature/dashboard`, not here — see `src/dashboard/README.md` on that branch. It is the
+agent-facing product built on top of this system, which is the boundary REPORT §1 argues
+for. The submitted state is tagged `submission-v1`.
 
 ## Layout
 
