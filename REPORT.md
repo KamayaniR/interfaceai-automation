@@ -159,11 +159,12 @@ unreviewed draft what every caller invokes.
 **Drift** (secondary, per the brief): every resolution reports which rung matched. Rung 0 is
 healthy; lower means the surface moved, and it reaches the caller rather than being swallowed.
 
-**What live runs found.** Six defects surfaced only under a real model — a risk heuristic
-matching bare `submit`; perception indexing only interactive controls, so a balance in a
-`<td>` had no reference; a model declaring success itself as a business outcome; the
-version-resolution hazard above. All are in `evidence/README.md`, and all were diagnosable in
-minutes *because* the result contract reports step, expected and observed.
+**What live runs found.** Five defects surfaced only under a real model or a real routing
+call — a risk heuristic matching bare `submit`; perception indexing only interactive
+controls, so a balance in a `<td>` had no reference; a model declaring success itself as a
+business outcome; the version-resolution hazard above; and the catalog advertising one
+version while resolving another. All five are written up in `evidence/README.md`, and all
+were diagnosable in minutes *because* the result contract reports step, expected and observed.
 
 ## 4. Heterogeneity & multi-tenant
 

@@ -218,7 +218,7 @@ reclassification (REPORT §6) exist because of this artifact.
 ## Why the discovered `v2` declares no business outcomes
 
 `v2` was produced by a real run and has `outcomes: []`, where the hand-authored `v1`
-declares three. The model said why in its own `finish` call: the not-found path *"was
+declares four. The model said why in its own `finish` call: the not-found path *"was
 deliberately not exercised during recording"*.
 
 That is the honest state, and it is left alone on purpose. Hand-editing outcomes into an
@@ -258,7 +258,7 @@ flow."* Discovery is offered, never started silently — it costs minutes and mo
 `04` and `05` are the same artifact rendered for its two audiences: the human approver
 (`catalog review`) and a calling agent (`catalog show`).
 
-### A sixth defect, found by the router on its first run
+### A fifth defect, found by the router on its first run
 
 `catalog.get()` resolved to the latest **approved** version while `catalog.list()` still
 returned the **highest** version. So the tool definitions handed to the router described
