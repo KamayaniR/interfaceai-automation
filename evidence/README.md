@@ -40,10 +40,17 @@ Each directory contains:
 | `07-recovered-transient-slowness` | 6s stall on the lookup screen | `success` — waited it out |
 | `08-failure-contract-violation` | Input fails its declared pattern | `failure` / `contract_violation`, pre-flight |
 | `09-escalation-human-handoff` | Irreversible step needs a human | `success` after a real control handoff |
+| `10-replay-of-discovered-artifact` | The LLM-recorded artifact, on an unseen member | `success` — discovery→replay closed |
+| `11-app-error-escalates.txt` | App returns HTTP 500 | `failure` / `escalation_timeout` — routed to a human |
+| `12-wrong-account-blocked.txt` | Name does not match the record opened | `business_outcome` / `MEMBER_NAME_MISMATCH` |
 
 The three groups the brief asks replay to distinguish are all present and never
-conflated: **expected business outcomes** (02–04), **recoverable conditions** (05–07),
-and **hard failures** (08).
+conflated: **expected business outcomes** (02–04, 12), **recoverable conditions** (05–07),
+and **hard failures** (08, 11).
+
+All seven runtime conditions §3.3 names are covered: validation (04), record-not-found
+(02), permission denial (03), unexpected dialog (06), session expiry (05), transient
+slowness (07), and outright app errors (11).
 
 ### What to look at
 

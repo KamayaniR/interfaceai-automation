@@ -207,7 +207,9 @@ export class ReplayEngine {
         throw new Terminate('failure', {
           class: 'contract_violation',
           stepId: null,
-          message: `runtime input "${name}" is not set in the environment`,
+          message:
+            `runtime input "${name}" is not set in the environment. ` +
+            `Run \`cp .env.example .env\` — it ships every value this demo needs.`,
           expected: `environment variable ${spec.env ?? '(none declared)'} to be set`,
           observed: 'unset',
         });

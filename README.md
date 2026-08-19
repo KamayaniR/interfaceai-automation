@@ -30,6 +30,11 @@ Every npm script loads `.env` automatically (via Node's native `--env-file-if-ex
 so the project still runs fine without one). `.env` is gitignored; `.env.example`
 documents every setting and its default.
 
+**`cp .env.example .env` is required**, not optional. Capabilities declare the CoreVue
+operator credentials as *runtime* inputs rather than caller arguments (REPORT §6), so
+replay reads them from the environment; `.env.example` ships the demo values. Without it
+replay stops pre-flight with `contract_violation` naming the missing variable.
+
 **Only discovery needs an API key.** Replay, escalation, the operator console, the
 capability catalog and the tests all run without one, against the committed artifacts.
 
