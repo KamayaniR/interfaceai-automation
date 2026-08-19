@@ -47,6 +47,9 @@ An exported shell variable works too and takes precedence.
 
 ## Demo path
 
+Everything below is the CLI. If you would rather see it as a running product — catalog,
+chat, live session view, escalation alerts — skip to [Dashboard](#dashboard).
+
 Start the target application and leave it running:
 
 ```bash
@@ -264,6 +267,11 @@ A catalog browser, a chat with history, and live intervention alerts. It is the
 *agent-facing product* sitting on top of this system — a client of the catalog and the
 intervention queue, holding no automation logic of its own, which is the boundary
 REPORT §1 argues for. Details in `src/dashboard/README.md`.
+
+**The chat needs `ANTHROPIC_API_KEY`**, because routing a sentence to a capability is the
+one thing here a model still does. Without a key the catalog, the artifact review drawer
+and past run logs all work; sending a message returns a message saying the key is missing.
+Everything the chat then runs is deterministic replay, with no model involved.
 
 Three things it makes visible that a terminal cannot:
 
