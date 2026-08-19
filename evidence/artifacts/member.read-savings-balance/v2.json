@@ -19,20 +19,23 @@
       "type": "string",
       "description": "Operator ID used to sign on to the CoreVue console.",
       "required": true,
-      "sensitivity": "secret"
+      "sensitivity": "secret",
+      "source": "caller"
     },
     "operatorPassword": {
       "type": "string",
       "description": "Password for the operator sign-on.",
       "required": true,
-      "sensitivity": "secret"
+      "sensitivity": "secret",
+      "source": "caller"
     },
     "memberNumber": {
       "type": "string",
       "description": "The credit union member number to look up.",
       "required": true,
       "pattern": "^\\d{6}$",
-      "sensitivity": "pii"
+      "sensitivity": "pii",
+      "source": "caller"
     }
   },
   "outputs": {

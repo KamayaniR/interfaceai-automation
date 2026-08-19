@@ -36,13 +36,15 @@
       "description": "The member number to look up.",
       "required": true,
       "pattern": "^\\d{6}$",
-      "sensitivity": "pii"
+      "sensitivity": "pii",
+      "source": "caller"
     },
     "expectedName": {
       "type": "string",
       "description": "Optional. Part of the member's name as the caller knows it, e.g. \"Rosa\". When supplied, the capability asserts the record on screen belongs to that person before reading anything off it, and returns MEMBER_NAME_MISMATCH if it does not. Omit it to skip the check.",
       "required": false,
-      "sensitivity": "pii"
+      "sensitivity": "pii",
+      "source": "caller"
     }
   },
   "outputs": {

@@ -121,7 +121,10 @@ Determinism rests on four things:
 1. **Unique-match-or-fail.** A strategy counts only if it matches exactly one element.
    Ambiguity falls through, because acting on "probably that one" is how automation quietly
    modifies the wrong account. Tested.
-2. **Verify everything** — every step asserts a checkpoint; nothing assumes a click worked.
+2. **Verify every state change.** Each step that navigates or clicks asserts a checkpoint —
+   nothing assumes a click worked. Steps that cannot change page state (typing into a
+   field, extracting a value) carry none; an extract that cannot resolve its target
+   already fails loudly, and a checkpoint there would assert the page it just read.
 3. **Wait for the document, not the load state.** In a frameset the page is already loaded,
    so `waitForLoadState` returns instantly while the child frame is mid-navigation. We poll
    the frame URL until the document is replaced.

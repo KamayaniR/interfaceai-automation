@@ -20,7 +20,8 @@
       "description": "The member's 6-digit CoreVue member number.",
       "required": true,
       "pattern": "^\\d{6}$",
-      "sensitivity": "pii"
+      "sensitivity": "pii",
+      "source": "caller"
     },
     "accountType": {
       "type": "string",
@@ -28,7 +29,8 @@
       "required": true,
       "pattern": "^S[23]$",
       "sensitivity": "public",
-      "example": "S2"
+      "example": "S2",
+      "source": "caller"
     },
     "operatorId": {
       "type": "string",
