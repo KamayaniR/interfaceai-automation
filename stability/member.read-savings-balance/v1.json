@@ -2,19 +2,21 @@
   "capabilityId": "member.read-savings-balance",
   "capabilityVersion": 1,
   "inputs": {
-    "memberId": "100442"
+    "memberId": "****42",
+    "operatorId": "[REDACTED]",
+    "operatorPassword": "[REDACTED]"
   },
-  "runs": 10,
-  "measuredAt": "2026-08-17T00:23:08.448Z",
+  "runs": 3,
+  "measuredAt": "2026-08-19T19:17:37.030Z",
   "buckets": {
-    "success": 10
+    "success": 3
   },
   "drift": [],
   "durationMs": {
-    "min": 901,
-    "median": 1073,
-    "max": 1573
+    "min": 421,
+    "median": 422,
+    "max": 694
   },
   "verdict": "stable",
-  "summary": "consistently success across 10 runs, every step on its preferred locator"
+  "summary": "consistently success across 3 runs, every step on its preferred locator"
 }

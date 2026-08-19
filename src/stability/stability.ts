@@ -31,6 +31,8 @@ import { z } from 'zod';
 import type { CapabilityArtifact } from '../schema/artifact.ts';
 import type { ReplayResult } from '../schema/result.ts';
 import { ReplayEngine } from '../replay/engine.ts';
+import { Policy } from '../policy/policy.ts';
+import { Redactor } from '../policy/redact.ts';
 
 export const StabilityReport = z.object({
   capabilityId: z.string(),
@@ -142,7 +144,15 @@ export async function measureStability(opts: MeasureOptions): Promise<StabilityR
   return {
     capabilityId: opts.artifact.capability.id,
     capabilityVersion: opts.artifact.capability.version,
-    inputs: opts.inputs,
+    // Redacted, like every other artefact of a run. A score is only meaningful for the
+    // inputs it was measured against, so they have to be recorded — but a stability
+    // report is a file on disk like a log, and §3.4 does not exempt it. Runtime-supplied
+    // credentials land in `inputs` now that sign-on is no longer a caller argument, so
+    // writing them verbatim would put a secret in a committed file.
+    inputs: new Redactor(Policy.load(opts.policyPath, 'replay').redactionConfig).redactInputs(
+      opts.inputs,
+      opts.artifact.inputs,
+    ) as Record<string, string>,
     runs: opts.runs,
     measuredAt: new Date().toISOString(),
     buckets,

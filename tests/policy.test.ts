@@ -10,6 +10,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Policy, type PolicyConfig } from '../src/policy/policy.ts';
 import { Redactor } from '../src/policy/redact.ts';
+import { readFileSync } from 'node:fs';
+import { parseArtifact } from '../src/schema/artifact.ts';
 
 const CONFIG: PolicyConfig = {
   allowlist: {
@@ -156,4 +158,25 @@ test('reads can never be classified irreversible whatever the prose says', async
 test('correctable writes are classified mutating, not irreversible', async () => {
   const { classifyRisk } = await import('../src/policy/risk.ts');
   assert.equal(classifyRisk('Save Save the edited address', 'click'), 'mutating');
+});
+
+test('a stability report never records a secret', () => {
+  // Regression. Making sign-on a runtime input put credentials into `inputs`, and the
+  // stability report copied that verbatim onto disk — a committed file containing a
+  // password, which is exactly what §3.4 forbids. A report is a log like any other.
+  const artifact = parseArtifact(
+    JSON.parse(readFileSync('artifacts/member.read-savings-balance/v1.json', 'utf8')),
+  );
+  const redactor = new Redactor(Policy.load('policy.yaml', 'replay').redactionConfig);
+
+  const redacted = redactor.redactInputs(
+    { memberId: '100442', operatorId: 'svc_automation', operatorPassword: 'hunter2' },
+    artifact.inputs,
+  );
+  const asText = JSON.stringify(redacted);
+
+  assert.ok(!asText.includes('hunter2'), 'the password must not survive');
+  assert.ok(!asText.includes('svc_automation'), 'nor the operator id');
+  assert.ok(!asText.includes('100442'), 'nor the member number, which is pii');
+  assert.match(asText, /\*\*/, 'something must actually be masked');
 });

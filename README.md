@@ -241,8 +241,13 @@ npm run stability -- --capability member.read-savings-balance --input memberId=1
 ```
 VERDICT   STABLE
           consistently success across 10 runs, every step on its preferred locator
-PROMOTION safe to approve — stable across 10 runs with {"memberId":"100442"}
+PROMOTION safe to approve — stable across 10 runs with {"memberId":"****42",
+          "operatorId":"[REDACTED]","operatorPassword":"[REDACTED]"}
 ```
+
+The inputs are redacted in the report as well as in the run log — a score is only
+meaningful for the inputs it was measured against, so they must be recorded, but a
+stability report is a file on disk and §3.4 does not exempt it.
 
 Stability means **consistency, not success rate**. A member number that doesn't exist
 should return `MEMBER_NOT_FOUND` on every run — that is perfectly stable, and a score
