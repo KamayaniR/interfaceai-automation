@@ -201,6 +201,20 @@ the same step runs under replay behind a human confirmation (scenario 09). The r
 returned to the model as a message it can reason about, and the system prompt tells it not
 to route around one — which is what it did.
 
+## A second discovered capability
+
+`artifacts/member.read-checking-balance/v1.json` was recorded by a **second** live model
+run, driven from the dashboard rather than the CLI, and then measured and approved through
+the same gate. It is worth reading beside the hand-authored artifacts for one reason: the
+model chose its own input names (`memberNumber`, not `memberId`) and the router handles
+both without any mapping, because it reads each capability's declared contract rather than
+assuming a convention.
+
+It is also where the credential design was found to be wrong. The model quite reasonably
+parameterised the operator sign-on, which would have had an agent ask a person for a
+service password in a chat window. `ParamSpec.source` and the recorder's `secret`
+reclassification (REPORT §6) exist because of this artifact.
+
 ## Why the discovered `v2` declares no business outcomes
 
 `v2` was produced by a real run and has `outcomes: []`, where the hand-authored `v1`
