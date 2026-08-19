@@ -35,12 +35,20 @@ operator credentials as *runtime* inputs rather than caller arguments (REPORT §
 replay reads them from the environment; `.env.example` ships the demo values. Without it
 replay stops pre-flight with `contract_violation` naming the missing variable.
 
-**Only discovery needs an API key.** Replay, escalation, the operator console, the
-capability catalog and the tests all run without one, against the committed artifacts.
+**A key is needed for the two things a model does**, and nothing else:
+
+| Needs `ANTHROPIC_API_KEY` | Runs without one |
+|---|---|
+| `npm run discover` — the discovery loop | `npm run replay` — every scenario in §3 |
+| `npm run ask` and the dashboard chat — routing a sentence to a capability | `npm run operator`, `npm run catalog`, `npm run stability`, `npm test`, `npm run verify` |
+
+Both degrade with a clear message rather than a stack trace. Everything in the right-hand
+column works against the committed artifacts, so most of this README is reproducible with
+no key at all.
 
 ```bash
 # .env
-ANTHROPIC_API_KEY=sk-ant-...          # required for `npm run discover` only
+ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 An exported shell variable works too and takes precedence.
@@ -63,8 +71,9 @@ npm run discover -- --goal "Look up member 100442 and read their current savings
 ```
 
 The model perceives the screen as an accessibility index and acts by element reference —
-it never sees or emits a CSS selector. On success it writes
-`artifacts/member.read-savings-balance/v1.json` plus a full run log under `runs/`.
+it never sees or emits a CSS selector. On success it writes a **new version** beside the
+committed ones — `artifacts/member.read-savings-balance/v3.json` if you run the goal above
+— plus a full run log under `runs/`. Versions are append-only; nothing is overwritten.
 
 The artifact is written as `draft`: an LLM authored it and no human has reviewed it. Read
 it, then promote it:
@@ -81,9 +90,15 @@ npm run replay -- --capability member.read-savings-balance --input memberId=1004
 
 ```
 STATUS   success
-OUTPUTS  { "savingsBalance": "4,182.55" }
-TRACE    7 step(s), 813ms
+OUTPUTS  {
+           "memberName": "ALVAREZ, ROSA M",
+           "savingsBalance": "4,182.55"
+         }
+TRACE    8 step(s), 751ms
 ```
+
+`memberName` comes back on every invocation, so an answer always says which record
+produced it — see *identity is asserted, not assumed* in REPORT §3.
 
 ### 3. The interesting part — runtime conditions
 
@@ -121,7 +136,18 @@ npm run replay -- --capability member.read-savings-balance --input memberId=1004
 #   different responses
 ```
 
-Faults: `notfound` `validation` `permdenied` `timeout` `dialog` `slow`.
+Faults: `notfound` `validation` `permdenied` `timeout` `dialog` `slow` `apperror`
+`apperror-hard`. The last one keeps the app broken past the recovery bound, so
+`recovery_exhausted` is reachable on demand too.
+
+Asking for the wrong person is also a declared outcome rather than a wrong answer:
+
+```bash
+npm run replay -- --capability member.read-savings-balance \
+  --input memberId=100443 --input expectedName=Rosa
+#   business_outcome / MEMBER_NAME_MISMATCH — 100443 is Daniel, so no balance is
+#   returned at all. Omit expectedName and the check is skipped.
+```
 
 ### 4. Human escalation on the live session
 
@@ -156,13 +182,15 @@ automation takes control back, re-verifies where it is, and completes:
 
 ```
 STATUS   success
-OUTPUTS  { "newAccountNumber": "100442-S2" }
+OUTPUTS  { "newAccountNumber": "100442-S3" }
 HUMAN    1 intervention(s):
          · s09: operator local-operator, 3 action(s) recorded
 ```
 
-Note `100442-S3` — the operator changed the account type mid-flow and the automation
-finished on that same session. It is not a fresh context.
+The run was invoked with `accountType=S2`, and the result says **S3** — because the
+operator changed it by hand mid-flow and the automation finished on that same session.
+That difference is the proof it is not a fresh context. (Resume without touching anything
+and you get `100442-S2`, as invoked.)
 
 ### 5. Ask in plain language — the agent-facing path
 
@@ -175,12 +203,17 @@ npm run ask -- "what is the savings balance for member 100443?"
 ```
 
 ```
+SOURCE   model                     <- or `cache`, on a repeat of the same intent
 ROUTE    invoke
 INVOKE   member.read-savings-balance v1
 INPUTS   {"memberId":"100443"}
 STATUS   success
-OUTPUTS  { "savingsBalance": "17,420.00" }
+OUTPUTS  { "memberName": "OKONKWO, DANIEL", "savingsBalance": "17,420.00" }
 ```
+
+Needs an API key — this is the routing step. Ask the same thing twice and the second is
+`SOURCE cache`: the routing decision is memoised per intent, so a repeat request runs with
+no model call at all. Only the decision is cached, never the balance.
 
 It refuses to guess:
 
