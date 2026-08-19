@@ -1,9 +1,9 @@
 # Dashboard
 
-**Not part of the take-home submission** — that is tagged `submission-v1`. This branch is
-the agent-facing product built *on top of* the automation system, which is the boundary
-REPORT §1 argues for: the dashboard decides *what* to do, the system underneath is how it
-reliably does it.
+The agent-facing product built *on top of* the automation system, and deliberately outside
+it — the boundary REPORT §1 argues for: the dashboard decides *what* to do, the system
+underneath is how it reliably and safely does it. It is a client of the catalog and the
+intervention queue, and holds no automation logic of its own.
 
 ```bash
 npm run target-app     # the legacy app being automated  :3100

@@ -244,16 +244,35 @@ each, so you get PASS/FAIL rather than output to read. It starts and stops the t
 itself and needs no API key. 14 checks, ~40s.
 
 ```bash
-npm test          # 54 unit tests
+npm test          # 79 unit tests
 npm run typecheck
 ```
 
-## Dashboard (branch only)
+## Dashboard
 
-A catalog browser, chat with history, and live intervention alerts live on
-`feature/dashboard`, not here — see `src/dashboard/README.md` on that branch. It is the
-agent-facing product built on top of this system, which is the boundary REPORT §1 argues
-for. The submitted state is tagged `submission-v1`.
+```bash
+npm run target-app      # terminal 1
+npm run dashboard       # terminal 2  ->  http://localhost:3300
+```
+
+A catalog browser, a chat with history, and live intervention alerts. It is the
+*agent-facing product* sitting on top of this system — a client of the catalog and the
+intervention queue, holding no automation logic of its own, which is the boundary
+REPORT §1 argues for. Details in `src/dashboard/README.md`.
+
+Three things it makes visible that a terminal cannot:
+
+- **The live session.** The right pane streams the automation's own browser over CDP —
+  not an iframe of the app, which would be a different session with different cookies and
+  would mislead an operator mid-escalation.
+- **What each answer cost.** Every reply is badged `MODEL CALL` or `NO MODEL CALL` with
+  routing and replay timings shown separately, because only one of the two ever needs an
+  LLM and that is the claim the whole design rests on.
+- **Escalation as it happens.** An irreversible step raises a modal carrying the
+  capability, the step, redacted inputs and a screenshot, and hands you the live browser.
+
+Set **Speed** in the header to slow replay down enough to watch; it adds idle time only
+and cannot change what a step does (`src/obs/pace.ts`).
 
 ## Layout
 
