@@ -285,6 +285,16 @@ Each answer is labelled in two halves — *chose capability* (may use the model)
 recorded steps* (never does). Both are green above, so that whole turn ran with no model in
 it at all.
 
+An irreversible step stops *before* it acts and hands over the live browser:
+
+![Human intervention required](evidence/screenshots/escalation-irreversible-step.png)
+
+The inputs are redacted where a human actually reads them — `memberId` keeps its last two
+characters so log lines correlate, and the credentials are gone entirely. On **Resume
+automation** the run continues on the same session and returns
+`{"newAccountNumber":"100442-S2"}`. Both screenshots are described in
+[`evidence/README.md`](evidence/README.md).
+
 ## Layout
 
 | Path | What it is |

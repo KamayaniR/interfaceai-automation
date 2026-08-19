@@ -297,3 +297,33 @@ terminal:
 - **Right — the automation's own browser session**, streamed live over CDP, with the step
   trace beside it. Not an iframe of the app: a second browser would be a different session
   with different cookies, which would mislead an operator during an escalation.
+
+### `screenshots/escalation-irreversible-step.png`
+
+The escalation §3.6 asks for, at the moment it fires. Automation stopped at **step 9 of
+10** — *before* opening the account, not after something broke — because the step is
+classified `irreversible` and the replay policy requires confirmation for that class.
+
+The briefing carries everything an operator needs to decide: which capability and version,
+which step and why, the state of the screen, and the inputs. Note what the inputs show:
+
+```
+{"memberId":"****42","accountType":"S2",
+ "operatorId":"[REDACTED]","operatorPassword":"[REDACTED]"}
+```
+
+PII keeps its last two characters so log lines can be correlated without disclosing the
+record; secrets are gone entirely. That is §3.4's redaction rules applied to the one place
+a human is actually reading the data.
+
+"You now hold the session" is literal — the control token has moved to `human`, and
+`Surface.act()` throws if automation attempts anything until it is handed back.
+
+### `screenshots/escalation-resumed-and-completed.png`
+
+The same run after the operator resumed: step 9 shows amber as the irreversible step,
+step 10 completes, and the capability returns `{"newAccountNumber":"100442-S2"}` from the
+confirmation screen — read out of the very session the human was just driving.
+
+Together these two are the whole control-transfer model: pause before the risky action,
+hand over the live session, resume on the same one, and return a result the caller can use.
