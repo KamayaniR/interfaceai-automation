@@ -217,15 +217,21 @@ function renderMessage(m) {
    * kinds of work, and only one of them needs an LLM.
    */
   if (m.refs?.routeSource) {
+    // Two phases, labelled separately. An earlier version put "model call" and "no LLM"
+    // on one line, which reads as a contradiction — they describe different halves of the
+    // turn. Deciding WHICH capability may cost a model call; RUNNING it never does.
     const cost = el('div', 'cost');
-    const src = el('span', `pill ${m.refs.routeSource}`,
-      m.refs.routeSource === 'cache' ? 'no model call' : 'model call');
-    cost.append(src);
-    if (m.refs.routeMs !== undefined) {
-      cost.append(el('span', null, `route ${(m.refs.routeMs / 1000).toFixed(2)}s`));
-    }
+    const sec = (ms) => `${(ms / 1000).toFixed(2)}s`;
+
+    const route = el('span', `pill ${m.refs.routeSource}`);
+    route.textContent =
+      m.refs.routeSource === 'cache'
+        ? `route · cached${m.refs.routeMs !== undefined ? ` ${sec(m.refs.routeMs)}` : ''}`
+        : `route · model${m.refs.routeMs !== undefined ? ` ${sec(m.refs.routeMs)}` : ''}`;
+    cost.append(route);
+
     if (m.refs.replayMs !== undefined) {
-      cost.append(el('span', 'replay', `replay ${(m.refs.replayMs / 1000).toFixed(2)}s · no LLM`));
+      cost.append(el('span', 'pill replay', `replay · no model ${sec(m.refs.replayMs)}`));
     }
     wrap.append(cost);
   }
