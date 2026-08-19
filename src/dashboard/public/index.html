@@ -87,8 +87,8 @@
   .msg.system .body { color:var(--muted); font-style:italic; }
   .cost { margin-top:7px; display:flex; gap:9px; align-items:center; flex-wrap:wrap;
           font:11px ui-monospace,monospace; color:var(--muted); }
-  .pill { padding:2px 8px; border-radius:9px; font-weight:600; text-transform:uppercase;
-          letter-spacing:.4px; font-size:10px; }
+  /* Not uppercased: these are sentences now, not tags. */
+  .pill { padding:3px 9px; border-radius:9px; font-weight:600; font-size:11px; cursor:help; }
   .pill.model  { background:#3a2a12; color:var(--warn); }
   .pill.cache  { background:#1e4d33; color:var(--ok); }
   .pill.replay { background:#16352a; color:var(--ok); }

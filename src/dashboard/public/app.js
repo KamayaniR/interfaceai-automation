@@ -221,17 +221,26 @@ function renderMessage(m) {
     // on one line, which reads as a contradiction — they describe different halves of the
     // turn. Deciding WHICH capability may cost a model call; RUNNING it never does.
     const cost = el('div', 'cost');
-    const sec = (ms) => `${(ms / 1000).toFixed(2)}s`;
+    const sec = (ms) => (ms === undefined ? '' : ` · ${(ms / 1000).toFixed(2)}s`);
 
-    const route = el('span', `pill ${m.refs.routeSource}`);
-    route.textContent =
-      m.refs.routeSource === 'cache'
-        ? `route · cached${m.refs.routeMs !== undefined ? ` ${sec(m.refs.routeMs)}` : ''}`
-        : `route · model${m.refs.routeMs !== undefined ? ` ${sec(m.refs.routeMs)}` : ''}`;
-    cost.append(route);
+    // Numbered and spelled out. Every turn IS half-and-half — one half may think, the
+    // other half only follows a recorded flow — and a viewer should not have to know
+    // what "route" and "replay" mean internally to see which half cost what.
+    const cached = m.refs.routeSource === 'cache';
+    const decide = el('span', `pill ${m.refs.routeSource}`,
+      cached
+        ? `1. chose capability — no LLM, matched a past request${sec(m.refs.routeMs)}`
+        : `1. chose capability — used LLM${sec(m.refs.routeMs)}`);
+    decide.title = cached
+      ? 'This exact request had been resolved before, so picking the capability needed no model call.'
+      : 'Deciding WHICH capability answers this request needed one model call.';
+    cost.append(decide);
 
     if (m.refs.replayMs !== undefined) {
-      cost.append(el('span', 'pill replay', `replay · no model ${sec(m.refs.replayMs)}`));
+      const run = el('span', 'pill replay',
+        `2. ran the recorded steps — no LLM${sec(m.refs.replayMs)}`);
+      run.title = 'Executing the capability never involves a model — it replays the recorded artifact.';
+      cost.append(run);
     }
     wrap.append(cost);
   }
