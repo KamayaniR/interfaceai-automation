@@ -5,13 +5,7 @@ typed, reviewable **capability artifact**. From then on the flow replays determi
 with no model in the loop, handles the runtime conditions that legitimately occur, and
 escalates to a human when it can't safely proceed.
 
-```
-  goal ──▶ discovery run ──▶ capability artifact ──▶ deterministic replay ──▶ result
-         (LLM in the loop)     (typed, versioned,      (no LLM, guardrailed,   (success /
-                                human-reviewable)       verified, escalates)   business
-                                                                               outcome /
-                                                                               failure)
-```
+![System architecture](evidence/screenshots/architecture.png)
 
 The design rationale, trade-offs and cut lines are in [REPORT.md](REPORT.md).
 Real output from every scenario is in [evidence/](evidence/README.md).
