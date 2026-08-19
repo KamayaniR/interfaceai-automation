@@ -216,7 +216,7 @@ function renderMessage(m) {
    * terminal. Showing routing and replay separately is the point: they are different
    * kinds of work, and only one of them needs an LLM.
    */
-  if (m.refs?.routeSource) {
+  if (m.refs?.routeSource || m.refs?.replayMs !== undefined) {
     // Two phases, labelled separately. An earlier version put "model call" and "no LLM"
     // on one line, which reads as a contradiction — they describe different halves of the
     // turn. Deciding WHICH capability may cost a model call; RUNNING it never does.
@@ -226,15 +226,17 @@ function renderMessage(m) {
     // Numbered and spelled out. Every turn IS half-and-half — one half may think, the
     // other half only follows a recorded flow — and a viewer should not have to know
     // what "route" and "replay" mean internally to see which half cost what.
-    const cached = m.refs.routeSource === 'cache';
-    const decide = el('span', `pill ${m.refs.routeSource}`,
-      cached
-        ? `1. chose capability — no LLM, matched a past request${sec(m.refs.routeMs)}`
-        : `1. chose capability — used LLM${sec(m.refs.routeMs)}`);
-    decide.title = cached
-      ? 'This exact request had been resolved before, so picking the capability needed no model call.'
-      : 'Deciding WHICH capability answers this request needed one model call.';
-    cost.append(decide);
+    if (m.refs.routeSource) {
+      const cached = m.refs.routeSource === 'cache';
+      const decide = el('span', `pill ${m.refs.routeSource}`,
+        cached
+          ? `1. chose capability — no LLM, matched a past request${sec(m.refs.routeMs)}`
+          : `1. chose capability — used LLM${sec(m.refs.routeMs)}`);
+      decide.title = cached
+        ? 'This exact request had been resolved before, so picking the capability needed no model call.'
+        : 'Deciding WHICH capability answers this request needed one model call.';
+      cost.append(decide);
+    }
 
     if (m.refs.replayMs !== undefined) {
       const run = el('span', 'pill replay',

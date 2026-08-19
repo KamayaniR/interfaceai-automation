@@ -276,3 +276,24 @@ Reports live here rather than inside the artifact: an artifact is a contract wit
 content hash, and a stability score is an observation that changes every time you measure.
 Each report records the exact inputs it was taken with, because a score measured on the
 not-found path says nothing about the happy path.
+
+
+## Screenshots
+
+### `screenshots/dashboard-chat-and-live-session.png`
+
+The dashboard mid-conversation, showing the three things that are hard to see from a
+terminal:
+
+- **Left — the capability catalog.** Three artifacts with their gates visible:
+  `APPROVED`/`DRAFT`, a stability verdict, and an `IRREVERSIBLE` marker on the one that
+  will stop for a human. `member.read-checking-balance` is the capability an LLM
+  discovered; the other two are hand-authored fixtures.
+- **Middle — what each answer cost.** Every turn is labelled in two halves: *chose
+  capability* (may use the model) and *ran the recorded steps* (**never** does). Both
+  turns here show `no LLM` for execution, which is the claim the whole design rests on.
+  The router's reasoning is quoted above each — including why it resolved "also" to the
+  member from the preceding turn rather than guessing.
+- **Right — the automation's own browser session**, streamed live over CDP, with the step
+  trace beside it. Not an iframe of the app: a second browser would be a different session
+  with different cookies, which would mislead an operator during an escalation.

@@ -363,10 +363,9 @@ app.post('/api/sessions/:id/messages', async (req, res) => {
         capabilityVersion: result.capabilityVersion,
         status: result.status,
         outcomeCode: result.status === 'business_outcome' ? result.outcome.code : undefined,
-        // The comparison that makes the whole design legible: what the decision cost
-        // versus what the deterministic execution cost.
-        routeSource: cached ? 'cache' : 'model',
-        routeMs,
+        // Only the execution cost. The routing cost was already reported on the "Using …"
+        // message two lines up, and printing it twice per turn reads as noise rather than
+        // as the two-halves story it is meant to tell.
         replayMs: result.durationMs,
       }),
     );

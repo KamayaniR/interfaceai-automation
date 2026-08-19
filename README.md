@@ -279,6 +279,12 @@ Three things it makes visible that a terminal cannot:
 Set **Speed** in the header to slow replay down enough to watch; it adds idle time only
 and cannot change what a step does (`src/obs/pace.ts`).
 
+![The dashboard mid-conversation](evidence/screenshots/dashboard-chat-and-live-session.png)
+
+Each answer is labelled in two halves — *chose capability* (may use the model) and *ran the
+recorded steps* (never does). Both are green above, so that whole turn ran with no model in
+it at all.
+
 ## Layout
 
 | Path | What it is |
